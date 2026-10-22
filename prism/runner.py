@@ -45,20 +45,28 @@ def detect_backend(fig: Any) -> str:
     type_name = type(fig).__name__
     mod_name = type(fig).__module__
 
-    if "plotly" in mod_name or hasattr(fig, "write_html") and hasattr(fig, "to_plotly_json"):
+    if "plotly" in mod_name or (hasattr(fig, "write_html") and hasattr(fig, "to_plotly_json")):
         return "plotly"
 
-    if "matplotlib" in mod_name or type_name == "Figure" and hasattr(fig, "savefig"):
+    if "matplotlib" in mod_name or (type_name == "Figure" and hasattr(fig, "savefig")):
         return "matplotlib"
 
     if "seaborn" in mod_name or "FacetGrid" in type_name or "PairGrid" in type_name:
         return "seaborn"
+
+    if "altair" in mod_name or type_name in {"Chart", "LayerChart", "VConcatChart", "HConcatChart"}:
+        return "altair"
+
+    if "bokeh" in mod_name or hasattr(fig, "renderers"):
+        return "bokeh"
 
     # Fallback duck-typing
     if hasattr(fig, "write_html"):
         return "plotly"
     if hasattr(fig, "savefig"):
         return "matplotlib"
+    if hasattr(fig, "to_html"):
+        return "generic_html"
 
     return "generic"
 

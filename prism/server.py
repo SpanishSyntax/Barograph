@@ -44,6 +44,108 @@ AUTO_RELOAD_SNIPPET = b"""
 """
 
 
+def render_error_page(script_name: str, error_msg: str, tb_text: str | None = None) -> str:
+    """Generate a clean, Frost-themed in-browser error dashboard."""
+    import html
+    escaped_err = html.escape(error_msg)
+    escaped_tb = html.escape(tb_text or "")
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Error in {html.escape(script_name)}</title>
+  <style>
+    :root {{
+      --bg: #0d1117;
+      --card: #161b22;
+      --border: #30363d;
+      --danger: #f85149;
+      --text: #c9d1d9;
+      --dim: #8b949e;
+      --code-bg: #030406;
+    }}
+    * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+    body {{
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+      padding: 2rem;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+    }}
+    .card {{
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-top: 4px solid var(--danger);
+      border-radius: 8px;
+      padding: 1.5rem;
+      max-width: 900px;
+      width: 100%;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+    }}
+    .header {{
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }}
+    .badge {{
+      background: rgba(248, 81, 73, 0.15);
+      color: var(--danger);
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      border: 1px solid rgba(248, 81, 73, 0.3);
+      text-transform: uppercase;
+    }}
+    h1 {{
+      font-size: 1.25rem;
+      color: #fff;
+    }}
+    .message {{
+      color: var(--danger);
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      word-break: break-word;
+    }}
+    pre {{
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem;
+      color: #ff7b72;
+      font-size: 0.85rem;
+      line-height: 1.45;
+      overflow-x: auto;
+      white-space: pre-wrap;
+    }}
+    .hint {{
+      margin-top: 1rem;
+      font-size: 0.85rem;
+      color: var(--dim);
+    }}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <span class="badge">Prism Compile Error</span>
+      <h1>{html.escape(script_name)}</h1>
+    </div>
+    <div class="message">{escaped_err}</div>
+    {f'<pre>{escaped_tb}</pre>' if escaped_tb else ''}
+    <div class="hint">Fix the issue in your editor — this page will automatically reload once saved.</div>
+  </div>
+</body>
+</html>
+"""
+
+
 class LiveReloadHTTPHandler(BaseHTTPRequestHandler):
     """Custom HTTP request handler serving the compiled plot with auto-reload injection."""
 
@@ -57,6 +159,12 @@ class LiveReloadHTTPHandler(BaseHTTPRequestHandler):
         pass
 
     def do_GET(self) -> None:
+        try:
+            self._handle_get()
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+
+    def _handle_get(self) -> None:
         if self.path == "/_mtime":
             self.send_response(200)
             self.send_header("Content-Type", "text/plain; charset=utf-8")
@@ -152,26 +260,45 @@ class PreviewServer:
                 return True
         except Exception as e:
             ui.error(f"Failed to render {self.target_path.name}: {e}")
+            tb = getattr(e, "tb_text", None)
+            err_html = render_error_page(self.target_path.name, str(e), tb)
+            with self._lock:
+                self._current_html_bytes = err_html.encode("utf-8")
+                self._current_mtime = time.time()
             return False
 
-    def _file_watcher_loop(self) -> None:
-        """Poll the target file for modifications and trigger recompilation."""
-        last_stat_mtime = 0.0
+    def _compute_watch_mtime(self) -> float:
+        """Compute the latest modification timestamp among the target script and local directory files."""
+        latest = 0.0
         try:
             if self.target_path.exists():
-                last_stat_mtime = self.target_path.stat().st_mtime
+                latest = self.target_path.stat().st_mtime
         except Exception:
             pass
 
+        # Also watch sibling python or data files in target directory
+        if self.is_python_script and self.target_path.parent.is_dir():
+            try:
+                for entry in self.target_path.parent.iterdir():
+                    if entry.is_file() and entry.suffix in {".py", ".json", ".csv", ".tsv", ".yaml", ".toml", ".txt"}:
+                        if not entry.name.startswith("."):
+                            m = entry.stat().st_mtime
+                            if m > latest:
+                                latest = m
+            except Exception:
+                pass
+        return latest
+
+    def _file_watcher_loop(self) -> None:
+        """Poll the target script and local directory for modifications and trigger recompilation."""
+        last_mtime = self._compute_watch_mtime()
+
         while not self._stop_event.is_set():
             time.sleep(0.3)
-            if not self.target_path.exists():
-                continue
-
             try:
-                current_stat_mtime = self.target_path.stat().st_mtime
-                if current_stat_mtime > last_stat_mtime:
-                    last_stat_mtime = current_stat_mtime
+                current_mtime = self._compute_watch_mtime()
+                if current_mtime > last_mtime:
+                    last_mtime = current_mtime
                     start_t = time.perf_counter()
                     success = self.compile_once()
                     elapsed_ms = (time.perf_counter() - start_t) * 1000.0

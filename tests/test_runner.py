@@ -63,10 +63,34 @@ class DummyPlotConfigurator:
         self.fig = DummyPlotlyFigure()
 
 
+class DummyAltairChart:
+    def __init__(self) -> None:
+        self.__class__.__name__ = "Chart"
+        self.__module__ = "altair.vegalite"
+
+    def to_html(self) -> str:
+        return "<html><body>Altair Chart</body></html>"
+
+    def save(self, path: str, **kwargs) -> None:
+        with open(path, "w") as f:
+            f.write("<html>Altair Chart</html>")
+
+
+class DummyBokehPlot:
+    def __init__(self) -> None:
+        self.__module__ = "bokeh.plotting"
+        self.renderers = []
+
+    def to_html(self) -> str:
+        return "<html><body>Bokeh Plot</body></html>"
+
+
 def test_detect_backend() -> None:
     assert detect_backend(DummyPlotlyFigure()) == "plotly"
     assert detect_backend(DummyMatplotlibFigure()) == "matplotlib"
     assert detect_backend(DummyFacetGrid(DummyMatplotlibFigure())) == "seaborn"
+    assert detect_backend(DummyAltairChart()) == "altair"
+    assert detect_backend(DummyBokehPlot()) == "bokeh"
 
 
 def test_unwrap_figure() -> None:

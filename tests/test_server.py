@@ -19,6 +19,18 @@ def test_preview_server_compile_html(tmp_path: Path) -> None:
     assert b"<h1>Test</h1>" in server.get_html_bytes()
 
 
+def test_preview_server_compilation_error_dashboard(tmp_path: Path) -> None:
+    script = tmp_path / "plot_broken.py"
+    script.write_text("raise RuntimeError('Syntax or runtime error during edit')")
+
+    server = PreviewServer(target_path=script, port=0, open_browser=False)
+    assert server.compile_once() is False
+    # Verifies error dashboard is generated
+    content = server.get_html_bytes()
+    assert b"Prism Compile Error" in content
+    assert b"Syntax or runtime error during edit" in content
+
+
 def test_preview_server_compile_py(tmp_path: Path) -> None:
     script = tmp_path / "plot.py"
     script.write_text("""

@@ -6,7 +6,12 @@ from pathlib import Path
 import pytest
 
 from prism.exporter import ExportError, export_figure, render_to_html_string, wrap_svg_in_html
-from tests.test_runner import DummyMatplotlibFigure, DummyPlotlyFigure
+from tests.test_runner import (
+    DummyAltairChart,
+    DummyBokehPlot,
+    DummyMatplotlibFigure,
+    DummyPlotlyFigure,
+)
 
 
 def test_wrap_svg_in_html() -> None:
@@ -69,6 +74,23 @@ def test_export_matplotlib_graceful_degrade_to_svg(tmp_path: Path) -> None:
     assert res.output_path.suffix == ".svg"
     assert res.output_path.is_file()
     assert "Mock SVG" in res.output_path.read_text()
+
+
+def test_render_to_html_string_altair() -> None:
+    chart = DummyAltairChart()
+    html = render_to_html_string(chart)
+    assert "Altair Chart" in html
+
+
+def test_export_altair_html(tmp_path: Path) -> None:
+    chart = DummyAltairChart()
+    out = tmp_path / "chart.html"
+
+    res = export_figure(chart, out, target_format="html")
+    assert res.output_path == out
+    assert res.actual_format == "html"
+    assert out.is_file()
+    assert "Altair Chart" in out.read_text()
 
 
 def test_export_creates_parent_directories(tmp_path: Path) -> None:

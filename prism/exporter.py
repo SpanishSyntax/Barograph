@@ -163,6 +163,20 @@ def render_to_html_string(figure: Any, title: str = "Prism Figure Preview") -> s
                     os.unlink(tname)
         return wrap_svg_in_html(svg_str, title=title)
 
+    if backend == "altair" or hasattr(figure, "to_html") or hasattr(figure, "save"):
+        if hasattr(figure, "to_html") and callable(figure.to_html):
+            return figure.to_html()
+        elif hasattr(figure, "save") and callable(figure.save):
+            with tempfile.NamedTemporaryFile("w+", suffix=".html", delete=False) as tf:
+                tname = tf.name
+            try:
+                figure.save(tname, format="html")
+                with open(tname, "r", encoding="utf-8") as rf:
+                    return rf.read()
+            finally:
+                if os.path.exists(tname):
+                    os.unlink(tname)
+
     # Fallback to string representation if nothing else
     return wrap_svg_in_html(f"<pre>{str(figure)}</pre>", title=title)
 
@@ -245,12 +259,55 @@ def export_figure(
             except Exception as e:
                 raise ExportError(f"Matplotlib export to '{fmt}' failed: {e}") from e
 
+    elif backend == "altair":
+        if fmt == "html":
+            if hasattr(figure, "save"):
+                figure.save(str(out_file), format="html")
+            elif hasattr(figure, "to_html"):
+                out_file.write_text(figure.to_html(), encoding="utf-8")
+        else:
+            try:
+                figure.save(str(out_file), format=fmt)
+            except Exception as e:
+                raise ExportError(
+                    f"Altair export to '{fmt}' failed: {e}.\n"
+                    "Note: Static Altair exports require 'vl-convert-python'."
+                ) from e
+
+    elif backend == "bokeh":
+        if fmt == "html":
+            if hasattr(figure, "to_html"):
+                out_file.write_text(figure.to_html(), encoding="utf-8")
+            else:
+                try:
+                    from bokeh.embed import file_html
+                    from bokeh.resources import CDN
+                    html_str = file_html(figure, CDN, "Bokeh Plot")
+                    out_file.write_text(html_str, encoding="utf-8")
+                except Exception as e:
+                    raise ExportError(f"Bokeh HTML export failed: {e}") from e
+        else:
+            try:
+                from bokeh.io import export_png, export_svg
+                if fmt in {"png", "webp"}:
+                    export_png(figure, filename=str(out_file))
+                elif fmt == "svg":
+                    export_svg(figure, filename=str(out_file))
+                else:
+                    raise ExportError(f"Bokeh does not support '{fmt}' export directly.")
+            except Exception as e:
+                raise ExportError(f"Bokeh static export failed: {e}") from e
+
     else:
         # Generic fallback
         if hasattr(figure, "export") and callable(figure.export):
             figure.export(str(out_file))
         elif hasattr(figure, "write_html") and fmt == "html":
             figure.write_html(str(out_file))
+        elif hasattr(figure, "to_html") and fmt == "html":
+            out_file.write_text(figure.to_html(), encoding="utf-8")
+        elif hasattr(figure, "save") and callable(figure.save):
+            figure.save(str(out_file))
         elif hasattr(figure, "savefig"):
             figure.savefig(str(out_file), bbox_inches="tight")
         else:
