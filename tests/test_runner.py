@@ -171,6 +171,25 @@ def main():
     assert res.backend == "matplotlib"
 
 
+def test_run_script_with_plt_show_does_not_block(tmp_path: Path) -> None:
+    script = tmp_path / "plot_show.py"
+    script.write_text("""
+class MockFig:
+    def savefig(self, path, **kwargs):
+        pass
+
+fig = MockFig()
+# Simulating a legacy script that calls plt.show()
+try:
+    import matplotlib.pyplot as plt
+    plt.show()
+except Exception:
+    pass
+""")
+    res = run_script(script)
+    assert res.figure is not None
+
+
 def test_run_script_figure_not_found(tmp_path: Path) -> None:
     script = tmp_path / "plot_empty.py"
     script.write_text("""

@@ -207,12 +207,21 @@ def run_script(
     if script_dir not in sys.path:
         sys.path.insert(0, script_dir)
 
-    # Optionally close existing matplotlib figures to isolate stack
-    if clear_matplotlib_stack and "matplotlib.pyplot" in sys.modules:
+    # Coerce headless matplotlib backend to prevent GUI blocking
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+    except Exception:
+        pass
+
+    original_plt_show = None
+    if "matplotlib.pyplot" in sys.modules:
         try:
             import matplotlib.pyplot as plt
-
-            plt.close("all")
+            original_plt_show = plt.show
+            plt.show = lambda *args, **kwargs: None
+            if clear_matplotlib_stack:
+                plt.close("all")
         except Exception:
             pass
 
@@ -235,8 +244,14 @@ def run_script(
         tb_text = traceback.format_exc()
         raise ScriptExecutionError(path, exc, tb_text) from exc
     finally:
-        # Restore sys.path
+        # Restore sys.path and matplotlib show
         sys.path = original_sys_path
+        if original_plt_show is not None:
+            try:
+                import matplotlib.pyplot as plt
+                plt.show = original_plt_show
+            except Exception:
+                pass
 
     elapsed_ms = (time.perf_counter() - start_time) * 1000.0
 
