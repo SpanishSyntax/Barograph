@@ -200,6 +200,73 @@ class LiveReloadHTTPHandler(BaseHTTPRequestHandler):
             self.wfile.write(content)
             return
 
+        # Serve sibling static files or dynamically compile Python scripts in target directory
+        if self.target_path and self.target_path.parent.is_dir():
+            clean_rel = self.path.lstrip("/").split("?")[0]
+            if clean_rel:
+                requested_file = (self.target_path.parent / clean_rel).resolve()
+                if (
+                    requested_file.is_file()
+                    and (self.target_path.parent == requested_file.parent or self.target_path.parent in requested_file.parents)
+                ):
+                    # If target is a Python plotting script, compile it dynamically on the fly
+                    if requested_file.suffix.lower() == ".py":
+                        try:
+                            exec_res = run_script(requested_file)
+                            html_str = render_to_html_string(exec_res.figure, title=f"Prism Preview - {requested_file.name}")
+                            raw_b = html_str.encode("utf-8")
+                            if b"</body>" in raw_b:
+                                raw_b = raw_b.replace(b"</body>", AUTO_RELOAD_SNIPPET + b"</body>")
+                            else:
+                                raw_b = raw_b + AUTO_RELOAD_SNIPPET
+                            self.send_response(200)
+                            self.send_header("Content-Type", "text/html; charset=utf-8")
+                            self.send_header("Content-Length", str(len(raw_b)))
+                            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+                            self.end_headers()
+                            self.wfile.write(raw_b)
+                            return
+                        except Exception as e:
+                            err_html = render_error_page(requested_file.name, str(e))
+                            self.send_response(500)
+                            self.send_header("Content-Type", "text/html; charset=utf-8")
+                            self.end_headers()
+                            self.wfile.write(err_html.encode("utf-8"))
+                            return
+
+                    # Otherwise, serve static file (HTML, SVG, PNG, JS, CSS, JSON)
+                    import mimetypes
+                    content_type, _ = mimetypes.guess_type(str(requested_file))
+                    if content_type is None:
+                        content_type = "application/octet-stream"
+
+                    try:
+                        with open(requested_file, "rb") as f:
+                            file_bytes = f.read()
+
+                        if content_type.startswith("text/html"):
+                            if b"</body>" in file_bytes:
+                                file_bytes = file_bytes.replace(b"</body>", AUTO_RELOAD_SNIPPET + b"</body>")
+                            else:
+                                file_bytes = file_bytes + AUTO_RELOAD_SNIPPET
+
+                        self.send_response(200)
+                        self.send_header(
+                            "Content-Type",
+                            f"{content_type}; charset=utf-8" if content_type.startswith("text/") else content_type,
+                        )
+                        self.send_header("Content-Length", str(len(file_bytes)))
+                        self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+                        self.end_headers()
+                        self.wfile.write(file_bytes)
+                        return
+                    except Exception as e:
+                        self.send_response(500)
+                        self.send_header("Content-Type", "text/plain")
+                        self.end_headers()
+                        self.wfile.write(f"500 Internal Error: {e}".encode("utf-8"))
+                        return
+
         # 404 for unknown routes
         self.send_response(404)
         self.send_header("Content-Type", "text/plain")
