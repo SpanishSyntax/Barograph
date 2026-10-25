@@ -1,4 +1,4 @@
-"""Unit tests for Prism live-reloading preview server and HTTP handler."""
+"""Unit tests for Barograph live-reloading preview server and HTTP handler."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import urllib.request
 from pathlib import Path
 import pytest
 
-from prism.server import AUTO_RELOAD_SNIPPET, PreviewServer
+from barograph.server import AUTO_RELOAD_SNIPPET, PreviewServer
 
 
 def test_preview_server_compile_html(tmp_path: Path) -> None:
@@ -27,7 +27,7 @@ def test_preview_server_compilation_error_dashboard(tmp_path: Path) -> None:
     assert server.compile_once() is False
     # Verifies error dashboard is generated
     content = server.get_html_bytes()
-    assert b"Prism Compile Error" in content
+    assert b"Barograph Compile Error" in content
     assert b"Syntax or runtime error during edit" in content
 
 
@@ -53,7 +53,7 @@ fig = MockFig()
 
 def test_preview_server_http_serving(tmp_path: Path) -> None:
     html_file = tmp_path / "index.html"
-    html_file.write_text("<!DOCTYPE html><html><body><h1>Hello Prism</h1></body></html>")
+    html_file.write_text("<!DOCTYPE html><html><body><h1>Hello Barograph</h1></body></html>")
 
     server = PreviewServer(target_path=html_file, host="127.0.0.1", port=0, open_browser=False)
     assert server.compile_once() is True
@@ -61,7 +61,7 @@ def test_preview_server_http_serving(tmp_path: Path) -> None:
     # Start HTTP server in thread
     import threading
     from http.server import HTTPServer
-    from prism.server import LiveReloadHTTPHandler
+    from barograph.server import LiveReloadHTTPHandler
 
     LiveReloadHTTPHandler.html_provider = server.get_html_bytes
     LiveReloadHTTPHandler.mtime_provider = server.get_mtime
@@ -79,8 +79,8 @@ def test_preview_server_http_serving(tmp_path: Path) -> None:
         with urllib.request.urlopen(url_root) as resp:
             assert resp.status == 200
             content = resp.read()
-            assert b"Hello Prism" in content
-            assert b"Prism Live Reload Snippet" in content
+            assert b"Hello Barograph" in content
+            assert b"Barograph Live Reload Snippet" in content
 
         # 2. Test /_mtime endpoint
         url_mtime = f"http://127.0.0.1:{port}/_mtime"

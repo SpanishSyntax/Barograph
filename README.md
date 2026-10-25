@@ -1,8 +1,8 @@
-# Prism 💎
+# Barograph 📈
 
 > **Universal Plot Batch-Runner, Multi-Backend Exporter & Live-Reloading Preview Server**
 
-Prism is a fast, streamlined CLI tool designed for the Frost ecosystem to run standalone Python plotting scripts (`plot_*.py`), detect figures across multiple rendering backends without boilerplate, batch export to HTML/vector/raster formats, and serve interactive live-reloading dashboards with instant browser sync.
+Barograph is a fast, streamlined CLI tool designed for the Frost ecosystem to run standalone Python plotting scripts (`plot_*.py`), detect figures across multiple rendering backends without boilerplate, batch export to HTML/vector/raster formats, and serve interactive live-reloading dashboards with instant browser sync.
 
 ---
 
@@ -17,16 +17,16 @@ Prism is a fast, streamlined CLI tool designed for the Frost ecosystem to run st
   - **Plotly**: Full-viewport HTML compilation with CDN runtime and static export via Kaleido.
   - **Matplotlib**: Vector SVG/PDF and high-resolution raster PNG/WebP exports.
   - **Seaborn**: Unwraps Seaborn `Axes` and `FacetGrid`/`PairGrid` objects directly to root figures.
-- 🔄 **Live-Reloading Preview Server (`prism serve`)**:
+- 🔄 **Live-Reloading Preview Server (`barograph serve`)**:
   - Serves dynamic HTML preview on localhost with automatic port discovery (`--port 0`).
   - Watches target `.py` scripts and re-compiles instantly on modification.
   - Injects auto-reload synchronization script via non-intrusive polling.
   - Automatically pops the default browser on start (`--no-open` to disable).
-- 📦 **Batch Export Engine (`prism build`)**:
+- 📦 **Batch Export Engine (`barograph build`)**:
   - Compiles entire directories of standalone plotting scripts in one pass.
   - Supports `--format html`, `svg`, `png`, `pdf`, `webp`.
   - Gracefully degrades Matplotlib figures from HTML to SVG with terminal alerts.
-- 💎 **Frost Ecosystem Integration**:
+- ❄️ **Frost Ecosystem Integration**:
   - Crystalline terminal interface built on `rime` with ANSI badges, spinners, and error panels.
   - Reproducible Nix flake packaging with NixOS and Home Manager modules.
 
@@ -34,20 +34,20 @@ Prism is a fast, streamlined CLI tool designed for the Frost ecosystem to run st
 
 ## 🚀 Quick Start
 
-Run Prism directly via Nix without manual installation:
+Run Barograph directly via Nix without manual installation:
 
 ```bash
 # Serve plot.py or first detected script with hot reload
-nix run github:SpanishSyntax/Prism -- serve
+nix run github:SpanishSyntax/Barograph -- serve
 
 # Batch export all plot*.py scripts to ./dist as HTML
-nix run github:SpanishSyntax/Prism -- build
+nix run github:SpanishSyntax/Barograph -- build
 
 # Batch export to high-res vector SVGs
-nix run github:SpanishSyntax/Prism -- build --format svg --out ./figures
+nix run github:SpanishSyntax/Barograph -- build --format svg --out ./figures
 
 # Inspect discovered scripts in current directory
-nix run github:SpanishSyntax/Prism -- list
+nix run github:SpanishSyntax/Barograph -- list
 ```
 
 ---
@@ -55,12 +55,12 @@ nix run github:SpanishSyntax/Prism -- list
 ## 💻 CLI Commands & Options
 
 ```
-[💎 prism] Universal Plot Batch-Runner, Multi-Backend Exporter & Preview Server
+[📈 barograph] Universal Plot Batch-Runner, Multi-Backend Exporter & Preview Server
 
 Usage:
-  prism build [options]              Batch execute and export standalone plotting scripts
-  prism serve [target] [options]     Live-reload preview server with browser sync
-  prism list [options]               Discover and inspect local plotting scripts
+  barograph build [options]              Batch execute and export standalone plotting scripts
+  barograph serve [target] [options]     Live-reload preview server with browser sync
+  barograph list [options]               Discover and inspect local plotting scripts
 
 Build Options:
   -d, --dir DIR          Source directory containing plot scripts (default: current directory)
@@ -88,7 +88,7 @@ General Options:
 
 ## 📐 Figure Detection Protocol
 
-Prism does not force users to wrap their code in rigid frameworks or import proprietary classes. It inspects script scopes dynamically using the following prioritized protocol:
+Barograph does not force users to wrap their code in rigid frameworks or import proprietary classes. It inspects script scopes dynamically using the following prioritized protocol:
 
 ```mermaid
 flowchart TD
@@ -144,20 +144,20 @@ import numpy as np
 t = np.linspace(0, 10, 100)
 plt.plot(t, np.sin(t))
 plt.title("Harmonic Oscillator")
-# No plt.show() needed! Prism captures the active figure stack.
+# No plt.show() needed! Barograph captures the active figure stack.
 ```
 
 ---
 
 ## ❄️ NixOS & Home Manager Configuration
 
-Add Prism to your system flake inputs:
+Add Barograph to your system flake inputs:
 
 ```nix
 {
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    prism.url = "github:SpanishSyntax/Prism";
+    barograph.url = "github:SpanishSyntax/Barograph";
   };
 }
 ```
@@ -165,14 +165,14 @@ Add Prism to your system flake inputs:
 ### NixOS Module
 ```nix
 {
-  programs.prism.enable = true;
+  programs.barograph.enable = true;
 }
 ```
 
 ### Home Manager Module
 ```nix
 {
-  programs.prism = {
+  programs.barograph = {
     enable = true;
   };
 }

@@ -1,1 +1,1 @@
-"""Tests for Prism."""
+"""Tests for Barograph."""

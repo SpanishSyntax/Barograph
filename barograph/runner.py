@@ -1,4 +1,4 @@
-"""Dynamic script execution engine and figure detection protocol for Prism."""
+"""Dynamic script execution engine and figure detection protocol for Barograph."""
 
 from __future__ import annotations
 
@@ -114,7 +114,7 @@ def inspect_matplotlib_stack() -> Any:
 
 
 def extract_figure_from_module(module: ModuleType) -> Any:
-    """Apply the Prism Figure Detection Protocol in prioritized order.
+    """Apply the Barograph Figure Detection Protocol in prioritized order.
 
     Protocol:
       1. Check module.fig or module.figure
@@ -225,7 +225,7 @@ def run_script(
         except Exception:
             pass
 
-    module_name = f"_prism_exec_{path.stem}_{uuid.uuid4().hex[:8]}"
+    module_name = f"_barograph_exec_{path.stem}_{uuid.uuid4().hex[:8]}"
     spec = importlib.util.spec_from_file_location(module_name, str(path))
     if spec is None or spec.loader is None:
         raise ImportError(f"Cannot load module spec for {path}")

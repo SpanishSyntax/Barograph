@@ -1,4 +1,4 @@
-"""Multi-backend export router and format converter for Prism."""
+"""Multi-backend export router and format converter for Barograph."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from prism.runner import detect_backend
+from barograph.runner import detect_backend
 
 
 class ExportError(Exception):
@@ -29,7 +29,7 @@ class ExportResult:
     degraded_reason: str | None = None
 
 
-def wrap_svg_in_html(svg_content: str, title: str = "Prism Figure Preview") -> str:
+def wrap_svg_in_html(svg_content: str, title: str = "Barograph Figure Preview") -> str:
     """Embed an SVG graphic inside a clean, modern, responsive HTML container."""
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -97,7 +97,7 @@ def wrap_svg_in_html(svg_content: str, title: str = "Prism Figure Preview") -> s
 """
 
 
-def render_to_html_string(figure: Any, title: str = "Prism Figure Preview") -> str:
+def render_to_html_string(figure: Any, title: str = "Barograph Figure Preview") -> str:
     """Render any supported figure object directly to an HTML string.
 
     For Plotly figures, uses .to_html() with CDN assets and full viewport height.

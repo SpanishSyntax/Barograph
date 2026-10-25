@@ -1,4 +1,4 @@
-"""Live-reloading HTTP preview server and file watcher for Prism."""
+"""Live-reloading HTTP preview server and file watcher for Barograph."""
 
 from __future__ import annotations
 
@@ -13,12 +13,12 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from typing import Any
 
-from prism.exporter import render_to_html_string
-from prism.runner import run_script
-from prism.ui import ui
+from barograph.exporter import render_to_html_string
+from barograph.runner import run_script
+from barograph.ui import ui
 
 AUTO_RELOAD_SNIPPET = b"""
-<!-- Prism Live Reload Snippet -->
+<!-- Barograph Live Reload Snippet -->
 <script>
   (function() {
     let lastMtime = null;
@@ -33,7 +33,7 @@ AUTO_RELOAD_SNIPPET = b"""
           if (lastMtime === null) {
             lastMtime = mtime;
           } else if (lastMtime !== mtime) {
-            console.log("[prism] Plot script changed. Reloading dashboard...");
+            console.log("[barograph] Plot script changed. Reloading dashboard...");
             location.reload();
           }
         })
@@ -134,7 +134,7 @@ def render_error_page(script_name: str, error_msg: str, tb_text: str | None = No
 <body>
   <div class="card">
     <div class="header">
-      <span class="badge">Prism Compile Error</span>
+      <span class="badge">Barograph Compile Error</span>
       <h1>{html.escape(script_name)}</h1>
     </div>
     <div class="message">{escaped_err}</div>
@@ -155,7 +155,7 @@ class LiveReloadHTTPHandler(BaseHTTPRequestHandler):
     target_path: Path | None = None
 
     def log_message(self, format: str, *args: Any) -> None:
-        # Suppress standard noisy access logging; prism outputs clean colored logs
+        # Suppress standard noisy access logging; barograph outputs clean colored logs
         pass
 
     def do_GET(self) -> None:
@@ -213,7 +213,7 @@ class LiveReloadHTTPHandler(BaseHTTPRequestHandler):
                     if requested_file.suffix.lower() == ".py":
                         try:
                             exec_res = run_script(requested_file)
-                            html_str = render_to_html_string(exec_res.figure, title=f"Prism Preview - {requested_file.name}")
+                            html_str = render_to_html_string(exec_res.figure, title=f"Barograph Preview - {requested_file.name}")
                             raw_b = html_str.encode("utf-8")
                             if b"</body>" in raw_b:
                                 raw_b = raw_b.replace(b"</body>", AUTO_RELOAD_SNIPPET + b"</body>")
@@ -309,7 +309,7 @@ class PreviewServer:
                 result = run_script(self.target_path)
                 html_str = render_to_html_string(
                     result.figure,
-                    title=f"Prism Preview - {self.target_path.name}",
+                    title=f"Barograph Preview - {self.target_path.name}",
                 )
                 raw_bytes = html_str.encode("utf-8")
                 with self._lock:
@@ -409,7 +409,7 @@ class PreviewServer:
         # Start watcher thread
         self._watcher_thread = threading.Thread(
             target=self._file_watcher_loop,
-            name="prism-file-watcher",
+            name="barograph-file-watcher",
             daemon=True,
         )
         self._watcher_thread.start()

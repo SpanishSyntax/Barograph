@@ -1,4 +1,4 @@
-"""Script discovery and path resolution utilities for Prism."""
+"""Script discovery and path resolution utilities for Barograph."""
 
 from __future__ import annotations
 

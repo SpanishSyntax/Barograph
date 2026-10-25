@@ -1,11 +1,11 @@
-"""Unit tests for Prism multi-backend export engine."""
+"""Unit tests for Barograph multi-backend export engine."""
 
 from __future__ import annotations
 
 from pathlib import Path
 import pytest
 
-from prism.exporter import ExportError, export_figure, render_to_html_string, wrap_svg_in_html
+from barograph.exporter import ExportError, export_figure, render_to_html_string, wrap_svg_in_html
 from tests.test_runner import (
     DummyAltairChart,
     DummyBokehPlot,

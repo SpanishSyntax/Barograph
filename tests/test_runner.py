@@ -1,11 +1,12 @@
-"""Unit tests for Prism dynamic runner and figure extraction protocol."""
+"""Unit tests for Barograph dynamic runner and figure extraction protocol."""
 
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 import pytest
 
-from prism.runner import (
+from barograph.runner import (
     FigureNotFoundError,
     ScriptExecutionError,
     detect_backend,

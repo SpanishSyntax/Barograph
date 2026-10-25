@@ -1,4 +1,4 @@
-"""CLI argument router, command dispatcher, and terminal UX for Prism."""
+"""CLI argument router, command dispatcher, and terminal UX for Barograph."""
 
 from __future__ import annotations
 
@@ -8,12 +8,12 @@ import time
 from pathlib import Path
 from typing import Sequence
 
-from prism import __version__
-from prism.discovery import discover_scripts, resolve_target
-from prism.exporter import export_figure
-from prism.runner import FigureNotFoundError, ScriptExecutionError, run_script
-from prism.server import PreviewServer
-from prism.ui import (
+from barograph import __version__
+from barograph.discovery import discover_scripts, resolve_target
+from barograph.exporter import export_figure
+from barograph.runner import FigureNotFoundError, ScriptExecutionError, run_script
+from barograph.server import PreviewServer
+from barograph.ui import (
     add_color_args,
     apply_color_args,
     handle_color_args,
@@ -28,9 +28,9 @@ def print_help() -> None:
     print(f"""{ui.badge()} {ui.bold("Universal Plot Batch-Runner, Multi-Backend Exporter & Preview Server")}
 
 {ui.blue("Usage:")}
-  prism build [options]              Batch execute and export standalone plotting scripts
-  prism serve [target] [options]     Live-reload preview server with browser sync
-  prism list [options]               Discover and inspect local plotting scripts
+  barograph build [options]              Batch execute and export standalone plotting scripts
+  barograph serve [target] [options]     Live-reload preview server with browser sync
+  barograph list [options]               Discover and inspect local plotting scripts
 
 {ui.blue("Build Options:")}
   -d, --dir DIR          Source directory containing plot scripts (default: current directory)
@@ -212,12 +212,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 0
 
     if "-V" in raw_argv or "--version" in raw_argv:
-        print(f"prism {__version__}")
+        print(f"barograph {__version__}")
         return 0
 
     # Build primary parser
     parser = argparse.ArgumentParser(
-        prog="prism",
+        prog="barograph",
         description="Universal batch runner, multi-backend export engine, and live-reloading preview server for Python plotting scripts",
         add_help=False,
     )

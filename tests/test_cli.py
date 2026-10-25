@@ -1,11 +1,11 @@
-"""Unit tests for Prism CLI commands and argument routing."""
+"""Unit tests for Barograph CLI commands and argument routing."""
 
 from __future__ import annotations
 
 from pathlib import Path
 import pytest
 
-from prism.cli import main
+from barograph.cli import main
 
 
 def test_cli_help(capsys: pytest.CaptureFixture[str]) -> None:
@@ -13,14 +13,14 @@ def test_cli_help(capsys: pytest.CaptureFixture[str]) -> None:
     assert code == 0
     captured = capsys.readouterr()
     assert "Usage:" in captured.out
-    assert "prism build" in captured.out
+    assert "barograph build" in captured.out
 
 
 def test_cli_version(capsys: pytest.CaptureFixture[str]) -> None:
     code = main(["--version"])
     assert code == 0
     captured = capsys.readouterr()
-    assert "prism 0.1.0" in captured.out
+    assert "barograph 0.1.0" in captured.out
 
 
 def test_cli_list(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:

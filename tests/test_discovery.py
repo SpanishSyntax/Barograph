@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 import pytest
 
-from prism.discovery import discover_scripts, is_ignored, resolve_target
+from barograph.discovery import discover_scripts, is_ignored, resolve_target
 
 
 def test_is_ignored() -> None:

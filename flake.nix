@@ -1,5 +1,5 @@
 {
-  description = "Prism - Universal Batch Runner, Multi-Backend Export Engine & Live-Reloading Preview Server for Python Plotting Scripts";
+  description = "Barograph - Universal Batch Runner, Multi-Backend Export Engine & Live-Reloading Preview Server for Python Plotting Scripts";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
@@ -25,8 +25,8 @@
       };
       lib = pkgs.lib;
 
-      prismPackage = pkgs.python3Packages.buildPythonApplication {
-        pname = "prism";
+      barographPackage = pkgs.python3Packages.buildPythonApplication {
+        pname = "barograph";
         version = "0.1.0";
         src = ./.;
         pyproject = true;
@@ -47,25 +47,25 @@
 
         meta = with lib; {
           description = "Batch runner, multi-backend export engine, and live-reloading preview server for Python plotting scripts";
-          homepage = "https://github.com/SpanishSyntax/Prism";
+          homepage = "https://github.com/SpanishSyntax/Barograph";
           license = licenses.mit;
-          mainProgram = "prism";
+          mainProgram = "barograph";
         };
       };
     in {
       packages = {
-        default = prismPackage;
-        prism = prismPackage;
+        default = barographPackage;
+        barograph = barographPackage;
       };
 
       apps = {
         default = {
           type = "app";
-          program = "${prismPackage}/bin/prism";
+          program = "${barographPackage}/bin/barograph";
         };
-        prism = {
+        barograph = {
           type = "app";
-          program = "${prismPackage}/bin/prism";
+          program = "${barographPackage}/bin/barograph";
         };
       };
 
@@ -81,28 +81,28 @@
     // {
       overlays = {
         default = final: prev: {
-          prism = self.packages.${prev.stdenv.hostPlatform.system}.default;
+          barograph = self.packages.${prev.stdenv.hostPlatform.system}.default;
         };
-        prism = self.overlays.default;
+        barograph = self.overlays.default;
       };
 
       nixosModules = {
-        default = self.nixosModules.prism;
-        prism = {
+        default = self.nixosModules.barograph;
+        barograph = {
           config,
           lib,
           pkgs,
           ...
         }: let
-          cfg = config.programs.prism;
+          cfg = config.programs.barograph;
           system = pkgs.stdenv.hostPlatform.system;
         in {
-          options.programs.prism = {
-            enable = lib.mkEnableOption "Prism - Python plotting runner, exporter & preview server";
+          options.programs.barograph = {
+            enable = lib.mkEnableOption "Barograph - Python plotting runner, exporter & preview server";
             package = lib.mkOption {
               type = lib.types.package;
               default = self.packages.${system}.default;
-              description = "The Prism package to install system-wide.";
+              description = "The Barograph package to install system-wide.";
             };
           };
           config = lib.mkIf cfg.enable {
@@ -112,38 +112,38 @@
       };
 
       homeManagerModules = {
-        default = self.homeManagerModules.prism;
-        prism = {
+        default = self.homeManagerModules.barograph;
+        barograph = {
           config,
           lib,
           pkgs,
           ...
         }: let
-          cfg = config.programs.prism;
+          cfg = config.programs.barograph;
           tomlFormat = pkgs.formats.toml {};
           system = pkgs.stdenv.hostPlatform.system;
-          defaultPrism = self.packages.${system}.default;
+          defaultBarograph = self.packages.${system}.default;
         in {
-          options.programs.prism = {
-            enable = lib.mkEnableOption "Prism - Python plotting runner, exporter & preview server";
+          options.programs.barograph = {
+            enable = lib.mkEnableOption "Barograph - Python plotting runner, exporter & preview server";
 
             package = lib.mkOption {
               type = lib.types.package;
-              default = defaultPrism;
-              description = "The Prism package to use.";
+              default = defaultBarograph;
+              description = "The Barograph package to use.";
             };
 
             settings = lib.mkOption {
               type = tomlFormat.type;
               default = {};
-              description = "Configuration written to ~/.config/prism/prism.toml.";
+              description = "Configuration written to ~/.config/barograph/barograph.toml.";
             };
           };
 
           config = lib.mkIf cfg.enable {
             home.packages = [cfg.package];
-            xdg.configFile."prism/prism.toml" = lib.mkIf (cfg.settings != {}) {
-              source = tomlFormat.generate "prism.toml" cfg.settings;
+            xdg.configFile."barograph/barograph.toml" = lib.mkIf (cfg.settings != {}) {
+              source = tomlFormat.generate "barograph.toml" cfg.settings;
             };
           };
         };

@@ -1,4 +1,4 @@
-"""Terminal UI interface for Prism, powered by Rime with robust fallback support."""
+"""Terminal UI interface for Barograph, powered by Rime with robust fallback support."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ try:
         visual_len,
     )
 
-    ui = UI(app_name="prism", icon="💎", badge_color="1;35")
+    ui = UI(app_name="barograph", icon="📈", badge_color="1;35")
 except ImportError:
     # Graceful fallback if rime is not yet installed in bare environments
     def detect_color_support() -> bool:
@@ -80,7 +80,7 @@ except ImportError:
         return render_panel(content, title=title, color="31")
 
     class FallbackUI:
-        def __init__(self, app_name: str = "prism", icon: str = "💎") -> None:
+        def __init__(self, app_name: str = "barograph", icon: str = "📈") -> None:
             self.app_name = app_name
             self.icon = icon
 
