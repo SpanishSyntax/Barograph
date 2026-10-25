@@ -6,7 +6,7 @@ import sys
 from typing import Any, Callable, Sequence
 
 try:
-    from rime import (
+    from prism import (
         UI,
         Spinner,
         add_color_args,
@@ -27,7 +27,7 @@ try:
 
     ui = UI(app_name="barograph", icon="📈", badge_color="1;35")
 except ImportError:
-    # Graceful fallback if rime is not yet installed in bare environments
+    # Graceful fallback if prism is not yet installed in bare environments
     def detect_color_support() -> bool:
         return sys.stdout.isatty()
 

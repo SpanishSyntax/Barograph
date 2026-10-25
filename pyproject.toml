@@ -21,7 +21,7 @@ classifiers = [
   "Topic :: Utilities",
 ]
 dependencies = [
-  "rime",
+  "prism",
 ]
 
 [project.optional-dependencies]

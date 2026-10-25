@@ -27,7 +27,7 @@ Barograph is a fast, streamlined CLI tool designed for the Frost ecosystem to ru
   - Supports `--format html`, `svg`, `png`, `pdf`, `webp`.
   - Gracefully degrades Matplotlib figures from HTML to SVG with terminal alerts.
 - ❄️ **Frost Ecosystem Integration**:
-  - Crystalline terminal interface built on `rime` with ANSI badges, spinners, and error panels.
+  - Crystalline terminal interface built on `prism` with ANSI badges, spinners, and error panels.
   - Reproducible Nix flake packaging with NixOS and Home Manager modules.
 
 ---
