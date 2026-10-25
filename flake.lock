@@ -38,11 +38,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1792502884,
-        "narHash": "sha256-IoNisKcGbUjdd45qCqywGMCYmZ5EnkxezvLII0FWwNA=",
+        "lastModified": 1792773339,
+        "narHash": "sha256-rZLrzrC6i+jnTAlvPZHogKDulY7WWDEv9hJeHieO7Zw=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "02c087f3fe673c9e317f206a627cb6b910336dbe",
+        "rev": "3ec636362e1816bc2f0888fa0fa2c69f1bc9e504",
         "type": "github"
       },
       "original": {
@@ -60,16 +60,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1792956914,
-        "narHash": "sha256-7QUaGqdnVkdRvDne2eigljSKgttcyozQRaBNZZLXvrE=",
+        "lastModified": 1792959243,
+        "narHash": "sha256-C1KfQS/wu+709UfJQXl7FilhKD3KRA1NIcNIhySQD84=",
         "owner": "SpanishSyntax",
-        "repo": "Rime",
-        "rev": "e1f3332250652aa6f2d5745846e1e19973004270",
+        "repo": "Prism",
+        "rev": "a1042e251c87f92ff32ae10f7b594d211359d0a0",
         "type": "github"
       },
       "original": {
         "owner": "SpanishSyntax",
-        "repo": "Rime",
+        "repo": "Prism",
         "type": "github"
       }
     },

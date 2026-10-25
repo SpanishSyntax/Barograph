@@ -1,4 +1,4 @@
-"""Terminal UI interface for Barograph, powered by Rime with robust fallback support."""
+"""Terminal UI interface for Barograph, powered by Prism with robust fallback support."""
 
 from __future__ import annotations
 
