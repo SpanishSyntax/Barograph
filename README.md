@@ -1,4 +1,4 @@
-# Barograph 📈
+# 📈 Barograph
 
 > **Universal Plot Batch-Runner, Multi-Backend Exporter & Live-Reloading Preview Server**
 
