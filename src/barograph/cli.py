@@ -24,6 +24,7 @@ from barograph.ui import (
     render_panel,
     ui,
 )
+from barograph.venv import activate_workspace_venv, find_workspace_venv
 
 
 def get_git_status(path: Path) -> str:
@@ -71,6 +72,16 @@ def print_status_dashboard(base_dir: str | Path = ".") -> list[Path]:
     except Exception:
         scripts = []
 
+    # Activate workspace virtual environment if available
+    venv_info = activate_workspace_venv(ws)
+    if venv_info is not None:
+        if venv_info.is_compatible:
+            env_status = f"{ui.bold_green('✔')} {venv_info.root.name} ({ui.green(f'Python {venv_info.detected_python_version}')})"
+        else:
+            env_status = f"{ui.bold_yellow('⚠')} {venv_info.root.name} ({ui.yellow(f'Python {venv_info.detected_python_version} - runtime is {platform.python_version()}')})"
+    else:
+        env_status = ui.dim("host runtime")
+
     host = platform.node() or "localhost"
     distro = f"{platform.system()} {platform.release()}"
     py_ver = f"Python {platform.python_version()}"
@@ -98,6 +109,7 @@ def print_status_dashboard(base_dir: str | Path = ".") -> list[Path]:
         f"{ui.bold('Engine Version:')}   {ui.bold_cyan(f'v{__version__}')} (Interactive Hub & Live Preview)",
         f"{ui.bold('Host & Runtime:')}   {host} — {distro} ({py_ver})",
         f"{ui.bold('Workspace Git:')}   {ws.name} ({ui.dim(git_info)})",
+        f"{ui.bold('Environment:')}     {env_status}",
         f"{ui.bold('Plot Backends:')}   {'  '.join(backend_badges)}",
         f"{ui.bold('Target Scripts:')}  {scripts_display}",
         f"{ui.bold('Export Defaults:')} {ui.cyan('./dist')} (Formats: html, svg, png, pdf, webp)",
@@ -444,6 +456,12 @@ def cmd_list(args: argparse.Namespace) -> int:
 def main(argv: Sequence[str] | None = None) -> int:
     """Main CLI entrypoint router."""
     raw_argv = list(argv) if argv is not None else sys.argv[1:]
+
+    # Early workspace virtualenv activation
+    try:
+        activate_workspace_venv()
+    except Exception:
+        pass
 
     # Apply color settings from argv
     try:

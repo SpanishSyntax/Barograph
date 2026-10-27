@@ -13,6 +13,9 @@ from types import ModuleType
 from typing import Any
 
 
+from barograph.venv import activate_workspace_venv, find_workspace_venv
+
+
 class FigureNotFoundError(Exception):
     """Raised when an executed script finishes without exporting or exposing a detectable figure."""
 
@@ -204,6 +207,12 @@ def run_script(
     if script_dir not in sys.path:
         sys.path.insert(0, script_dir)
 
+    # Auto-activate workspace virtual environment if present
+    try:
+        activate_workspace_venv(path.parent)
+    except Exception:
+        pass
+
     # Coerce headless matplotlib backend to prevent GUI blocking
     try:
         import matplotlib
@@ -239,6 +248,16 @@ def run_script(
         import traceback
 
         tb_text = traceback.format_exc()
+        if isinstance(exc, (ModuleNotFoundError, ImportError)):
+            venv_check = find_workspace_venv(path.parent)
+            if venv_check and not venv_check.is_compatible:
+                hint = (
+                    f"\n[Barograph Hint] Detected workspace virtualenv at '{venv_check.root}' built with "
+                    f"Python {venv_check.detected_python_version}, but Barograph is running under Python "
+                    f"{sys.version_info.major}.{sys.version_info.minor}.\n"
+                    f"Run using the project's Python via 'python -m barograph' or align Python versions."
+                )
+                tb_text = f"{tb_text.rstrip()}\n{hint}\n"
         raise ScriptExecutionError(path, exc, tb_text) from exc
     finally:
         # Restore sys.path and matplotlib show
