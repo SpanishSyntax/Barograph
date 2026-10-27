@@ -99,17 +99,22 @@ def resolve_target(
             raise FileNotFoundError(f"Specified target not found: {p}")
         return p
 
-    # 1. Check for standard plot.py
+    # 1. Check for interactive landing page dashboard.py
+    candidate_dash = base / "dashboard.py"
+    if candidate_dash.is_file():
+        return candidate_dash.resolve()
+
+    # 2. Check for standard plot.py
     candidate = base / "plot.py"
     if candidate.is_file():
         return candidate.resolve()
 
-    # 2. Check for any plot*.py in base_dir
+    # 3. Check for any plot*.py in base_dir
     scripts = discover_scripts(base, pattern="plot*.py", recursive=False)
     if scripts:
         return scripts[0]
 
-    # 3. Check for index.html
+    # 4. Check for index.html
     candidate_html = base / "index.html"
     if candidate_html.is_file():
         return candidate_html.resolve()

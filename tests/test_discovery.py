@@ -66,7 +66,9 @@ def test_resolve_target_explicit(tmp_path: Path) -> None:
 
 
 def test_resolve_target_auto(tmp_path: Path) -> None:
-    # 1. Default plot.py takes highest precedence
+    # 1. Interactive dashboard.py takes highest precedence
+    dash_py = tmp_path / "dashboard.py"
+    dash_py.write_text("fig = 0")
     plot_py = tmp_path / "plot.py"
     plot_py.write_text("fig = 1")
     plot_traj = tmp_path / "plot_traj.py"
@@ -74,17 +76,21 @@ def test_resolve_target_auto(tmp_path: Path) -> None:
     index_html = tmp_path / "index.html"
     index_html.write_text("<html></html>")
 
+    assert resolve_target(base_dir=tmp_path) == dash_py.resolve()
+
+    # 2. When dashboard.py is removed, plot.py is selected
+    dash_py.unlink()
     assert resolve_target(base_dir=tmp_path) == plot_py.resolve()
 
-    # 2. When plot.py is removed, plot_traj.py is selected
+    # 3. When plot.py is removed, plot_traj.py is selected
     plot_py.unlink()
     assert resolve_target(base_dir=tmp_path) == plot_traj.resolve()
 
-    # 3. When scripts are removed, index.html is selected
+    # 4. When scripts are removed, index.html is selected
     plot_traj.unlink()
     assert resolve_target(base_dir=tmp_path) == index_html.resolve()
 
-    # 4. When nothing is present, FileNotFoundError is raised
+    # 5. When nothing is present, FileNotFoundError is raised
     index_html.unlink()
     with pytest.raises(FileNotFoundError):
         resolve_target(base_dir=tmp_path)

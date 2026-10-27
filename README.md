@@ -10,7 +10,7 @@ Barograph is a fast, streamlined CLI tool designed for the Frost ecosystem to ru
 
 - ⚡ **Zero-Boilerplate Protocol**: Automatically extracts target figures from standalone scripts:
   - `fig` / `figure` module-level attributes
-  - `config.fig` (`flaker` MathVis `PlotConfigurator` native integration)
+  - `config.fig` (`flaker` `PlotConfigurator` native integration)
   - `plot()` / `main()` callable functions
   - Active `matplotlib.pyplot` figure stack fallback (`plt.get_fignums()`)
 - 🎨 **Multi-Backend Support**:
@@ -118,7 +118,7 @@ fig = go.Figure(data=go.Scatter(x=[1, 2, 3], y=[4, 1, 2]))
 fig.update_layout(title="Trajectory")
 ```
 
-#### 2. Flaker MathVis `PlotConfigurator`
+#### 2. `PlotConfigurator` Integration
 ```python
 import plotly.graph_objects as go
 from plotter import PlotConfigurator

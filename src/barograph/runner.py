@@ -61,11 +61,13 @@ def detect_backend(fig: Any) -> str:
         return "bokeh"
 
     # Fallback duck-typing
+    if isinstance(fig, str):
+        return "html"
     if hasattr(fig, "write_html"):
         return "plotly"
     if hasattr(fig, "savefig"):
         return "matplotlib"
-    if hasattr(fig, "to_html"):
+    if hasattr(fig, "to_html") or hasattr(fig, "_repr_html_"):
         return "generic_html"
 
     return "generic"
@@ -76,7 +78,7 @@ def unwrap_figure(obj: Any) -> Any:
     if obj is None:
         return None
 
-    # Handle PlotConfigurator instance (from flaker MathVis template)
+    # Handle PlotConfigurator instance (from flaker Barograph template)
     if hasattr(obj, "fig") and not hasattr(obj, "savefig") and hasattr(obj.fig, "write_html"):
         return obj.fig
 
@@ -124,20 +126,15 @@ def extract_figure_from_module(module: ModuleType) -> Any:
       5. Fallback: inspect active matplotlib.pyplot figure stack (plt.get_fignums())
       6. Inspect module attributes for any figure-like objects with .write_html or .savefig
     """
-    # 1. Check module.fig / module.figure
-    if hasattr(module, "fig"):
-        fig = getattr(module, "fig")
-        unwrapped = unwrap_figure(fig)
-        if unwrapped is not None:
-            return unwrapped
+    # 1. Check module.fig / module.figure / module.dashboard / module.html
+    for attr_name in ("fig", "figure", "dashboard", "html"):
+        if hasattr(module, attr_name):
+            val = getattr(module, attr_name)
+            unwrapped = unwrap_figure(val)
+            if unwrapped is not None:
+                return unwrapped
 
-    if hasattr(module, "figure"):
-        fig = getattr(module, "figure")
-        unwrapped = unwrap_figure(fig)
-        if unwrapped is not None:
-            return unwrapped
-
-    # 2. Check module.config.fig (standard Frost MathVis PlotConfigurator)
+    # 2. Check module.config.fig (standard Frost Barograph PlotConfigurator)
     if hasattr(module, "config") and hasattr(getattr(module, "config"), "fig"):
         unwrapped = unwrap_figure(getattr(module, "config").fig)
         if unwrapped is not None:

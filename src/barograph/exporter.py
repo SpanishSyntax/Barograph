@@ -108,6 +108,19 @@ def render_to_html_string(figure: Any, title: str = "Barograph Figure Preview") 
 
     backend = detect_backend(figure)
 
+    if isinstance(figure, str):
+        stripped = figure.strip()
+        if stripped.startswith("<!DOCTYPE") or "<html" in stripped or "<div" in stripped:
+            return figure
+        return wrap_svg_in_html(figure, title=title)
+
+    if hasattr(figure, "_repr_html_") and callable(figure._repr_html_):
+        rep = figure._repr_html_()
+        if isinstance(rep, str):
+            if rep.strip().startswith("<!DOCTYPE") or "<html" in rep:
+                return rep
+            return wrap_svg_in_html(rep, title=title)
+
     if backend == "plotly":
         if hasattr(figure, "to_html") and callable(figure.to_html):
             return figure.to_html(
@@ -210,6 +223,19 @@ def export_figure(
     fmt = target_format.lower().lstrip(".")
     backend = detect_backend(figure)
 
+    if isinstance(figure, str):
+        stripped = figure.strip()
+        if stripped.startswith("<!DOCTYPE") or "<html" in stripped or "<div" in stripped:
+            return figure
+        return wrap_svg_in_html(figure, title=title)
+
+    if hasattr(figure, "_repr_html_") and callable(figure._repr_html_):
+        rep = figure._repr_html_()
+        if isinstance(rep, str):
+            if rep.strip().startswith("<!DOCTYPE") or "<html" in rep:
+                return rep
+            return wrap_svg_in_html(rep, title=title)
+
     degraded = False
     degraded_reason = None
     actual_fmt = fmt
@@ -300,7 +326,9 @@ def export_figure(
 
     else:
         # Generic fallback
-        if hasattr(figure, "export") and callable(figure.export):
+        if isinstance(figure, str) and fmt == "html":
+            out_file.write_text(figure, encoding="utf-8")
+        elif hasattr(figure, "export") and callable(figure.export):
             figure.export(str(out_file))
         elif hasattr(figure, "write_html") and fmt == "html":
             figure.write_html(str(out_file))

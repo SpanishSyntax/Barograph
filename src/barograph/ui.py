@@ -204,7 +204,7 @@ except ImportError:
             border_color: str = "0;35",
             width: int = 76,
         ) -> None:
-            render_panel(title=title, lines=lines, border_color=border_color, width=width, stream=self.stream)
+            render_panel(title=title, lines=lines, border_color=border_color, width=width, stream=sys.stdout)
 
         def error_panel(self, title: str, lines: Sequence[str] | str) -> None:
             render_error_panel(title=title, lines=lines)
