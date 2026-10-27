@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
+import platform
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -23,14 +26,257 @@ from barograph.ui import (
 )
 
 
+def get_git_status(path: Path) -> str:
+    """Return a brief git branch and clean/dirty status string."""
+    try:
+        res = subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            cwd=path,
+            capture_output=True,
+            text=True,
+            timeout=1.0,
+        )
+        if res.returncode == 0:
+            branch = res.stdout.strip()
+            diff_res = subprocess.run(
+                ["git", "status", "--porcelain"],
+                cwd=path,
+                capture_output=True,
+                text=True,
+                timeout=1.0,
+            )
+            is_clean = len(diff_res.stdout.strip()) == 0
+            return f"{branch} ({'clean' if is_clean else 'dirty'})"
+    except Exception:
+        pass
+    return "not a git repo"
+
+
+def get_installed_backends() -> list[tuple[str, bool]]:
+    """Detect available plotting library backends in the active Python environment."""
+    return [
+        ("plotly", importlib.util.find_spec("plotly") is not None),
+        ("matplotlib", importlib.util.find_spec("matplotlib") is not None),
+        ("seaborn", importlib.util.find_spec("seaborn") is not None),
+        ("altair", importlib.util.find_spec("altair") is not None),
+        ("bokeh", importlib.util.find_spec("bokeh") is not None),
+    ]
+
+
+def print_status_dashboard(base_dir: str | Path = ".") -> list[Path]:
+    """Display an informative status dashboard panel matching Sled and Borealis."""
+    ws = Path(base_dir).resolve()
+    try:
+        scripts = discover_scripts(ws, pattern="plot*.py", recursive=False)
+    except Exception:
+        scripts = []
+
+    host = platform.node() or "localhost"
+    distro = f"{platform.system()} {platform.release()}"
+    py_ver = f"Python {platform.python_version()}"
+    git_info = get_git_status(ws)
+
+    backends = get_installed_backends()
+    backend_badges: list[str] = []
+    for name, ok in backends:
+        if ok:
+            backend_badges.append(f"{ui.bold_green('✔')} {name}")
+        else:
+            backend_badges.append(f"{ui.dim('·')} {ui.dim(name)}")
+
+    if scripts:
+        script_names = ", ".join(s.name for s in scripts[:3])
+        if len(scripts) > 3:
+            script_names += f" (+{len(scripts) - 3} more)"
+        scripts_display = (
+            f"{ui.bold_green(str(len(scripts)))} detected ({ui.dim(script_names)})"
+        )
+    else:
+        scripts_display = ui.dim("no plot scripts found (plot*.py)")
+
+    lines = [
+        f"{ui.bold('Engine Version:')}   {ui.bold_cyan(f'v{__version__}')} (Interactive Hub & Live Preview)",
+        f"{ui.bold('Host & Runtime:')}   {host} — {distro} ({py_ver})",
+        f"{ui.bold('Workspace Git:')}   {ws.name} ({ui.dim(git_info)})",
+        f"{ui.bold('Plot Backends:')}   {'  '.join(backend_badges)}",
+        f"{ui.bold('Target Scripts:')}  {scripts_display}",
+        f"{ui.bold('Export Defaults:')} {ui.cyan('./dist')} (Formats: html, svg, png, pdf, webp)",
+    ]
+
+    ui.panel("BAROGRAPH PLOT RUNNER & PREVIEW SERVER", lines, border_color="0;35")
+    return scripts
+
+
+def run_interactive_menu(scripts: list[Path]) -> int:
+    """Prompt the user with interactive startup actions matching Sled and Snowpack."""
+    actions: list[tuple[str, str, str]] = []
+
+    if scripts:
+        primary = scripts[0]
+        actions.append(
+            (
+                "serve",
+                f"Start Live Preview Server ({primary.name})",
+                "Launch live-reloading preview server with browser hot-reload",
+            )
+        )
+        if len(scripts) > 1:
+            actions.append(
+                (
+                    "serve-select",
+                    "Select Script for Live Preview...",
+                    f"Choose one of {len(scripts)} discovered plot scripts to preview",
+                )
+            )
+        actions.append(
+            (
+                "build",
+                f"Batch Build All Scripts ({len(scripts)} targets)",
+                "Execute and export all discovered scripts to ./dist",
+            )
+        )
+        actions.append(
+            (
+                "build-single",
+                "Execute & Export Single Script...",
+                "Select an individual script to run and export immediately",
+            )
+        )
+    else:
+        actions.append(
+            (
+                "serve",
+                "Start Live Preview Server",
+                "Launch preview server on plot.py or index.html",
+            )
+        )
+        actions.append(
+            (
+                "build",
+                "Batch Build All Scripts",
+                "Scan workspace and export matching plot*.py scripts",
+            )
+        )
+
+    actions.append(
+        (
+            "list",
+            "Inspect Discovered Scripts",
+            "List discovered plot scripts, file sizes, and paths",
+        )
+    )
+    actions.append(
+        ("exit", "Exit", "Close Barograph dashboard")
+    )
+
+    try:
+        action = ui.select("Quick Actions:", actions)
+    except KeyboardInterrupt:
+        return 0
+
+    if not action or action == "exit":
+        return 0
+
+    if action == "serve":
+        target = str(scripts[0]) if scripts else None
+        return cmd_serve(
+            argparse.Namespace(
+                target=target,
+                port=0,
+                host="127.0.0.1",
+                no_open=False,
+                verbose=False,
+            )
+        )
+
+    if action == "serve-select":
+        options = [
+            (str(s), s.name, f"{s.stat().st_size / 1024.0:.1f} KB")
+            for s in scripts
+        ]
+        chosen = ui.select("Select plot script for live preview:", options)
+        if not chosen:
+            return 0
+        return cmd_serve(
+            argparse.Namespace(
+                target=chosen,
+                port=0,
+                host="127.0.0.1",
+                no_open=False,
+                verbose=False,
+            )
+        )
+
+    if action == "build":
+        return cmd_build(
+            argparse.Namespace(
+                dir=".",
+                out="./dist",
+                format="html",
+                pattern="plot*.py",
+                recursive=False,
+                all=False,
+                verbose=False,
+            )
+        )
+
+    if action == "build-single":
+        options = [
+            (str(s), s.name, f"{s.stat().st_size / 1024.0:.1f} KB")
+            for s in scripts
+        ]
+        chosen = ui.select("Select plot script to export:", options)
+        if not chosen:
+            return 0
+        chosen_path = Path(chosen)
+        fmt_options = [
+            ("html", "Interactive HTML", "Standalone bundle (Plotly/generic) or SVG fallback"),
+            ("svg", "Vector SVG", "Clean scalable vector graphic for papers / slides"),
+            ("png", "Raster PNG", "High-resolution raster graphic"),
+            ("pdf", "Vector PDF", "Portable Document Format for print / Typst"),
+            ("webp", "WebP Image", "Modern compressed web image"),
+        ]
+        chosen_fmt = ui.select("Select export format:", fmt_options)
+        return cmd_build(
+            argparse.Namespace(
+                dir=str(chosen_path.parent),
+                out="./dist",
+                format=chosen_fmt or "html",
+                pattern=chosen_path.name,
+                recursive=False,
+                all=False,
+                verbose=False,
+            )
+        )
+
+    if action == "list":
+        return cmd_list(
+            argparse.Namespace(
+                dir=".",
+                pattern="plot*.py",
+                recursive=False,
+                all=False,
+            )
+        )
+
+    return 0
+
+
 def print_help() -> None:
     """Print colored usage instructions matching Flaker, Folio, Borealis, Glaze, and Firn."""
     print(f"""{ui.badge()} {ui.bold("Universal Plot Batch-Runner, Multi-Backend Exporter & Preview Server")}
 
 {ui.blue("Usage:")}
+  barograph                              Open interactive status dashboard & quick actions
+  barograph status                       Display host, runtime, backends & script dashboard
   barograph build [options]              Batch execute and export standalone plotting scripts
   barograph serve [target] [options]     Live-reload preview server with browser sync
   barograph list [options]               Discover and inspect local plotting scripts
+  barograph <command> [options]
+
+{ui.blue("Interactive & Dashboard Commands:")}
+  status                 Display live host, runtime, plot backends & script dashboard
+  menu                   Open the interactive Quick Actions menu
 
 {ui.blue("Build Options:")}
   -d, --dir DIR          Source directory containing plot scripts (default: current directory)
@@ -206,13 +452,19 @@ def main(argv: Sequence[str] | None = None) -> int:
         pass
 
     # Intercept top-level help and version before parser
-    if not raw_argv or "-h" in raw_argv or "--help" in raw_argv:
-        if not raw_argv or (len(raw_argv) == 1 and raw_argv[0] in {"-h", "--help"}):
-            print_help()
-            return 0
+    if "-h" in raw_argv or "--help" in raw_argv or (len(raw_argv) == 1 and raw_argv[0] == "help"):
+        print_help()
+        return 0
 
-    if "-V" in raw_argv or "--version" in raw_argv:
+    if "-V" in raw_argv or "--version" in raw_argv or (len(raw_argv) == 1 and raw_argv[0] in {"-v", "version"}):
         print(f"barograph {__version__}")
+        return 0
+
+    # If run without arguments, display status dashboard and interactive menu
+    if not raw_argv:
+        scripts = print_status_dashboard()
+        if sys.stdin.isatty():
+            return run_interactive_menu(scripts)
         return 0
 
     # Build primary parser
@@ -227,6 +479,18 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("-h", "--help", action="store_true", help="Show help")
 
     subparsers = parser.add_subparsers(dest="command", required=False)
+
+    # Subcommand: status
+    p_status = subparsers.add_parser("status", add_help=False, help="Display status dashboard")
+    add_color_args(p_status)
+    p_status.add_argument("-d", "--dir", default=".", help="Source directory (default: .)")
+    p_status.add_argument("-h", "--help", action="store_true", help="Show help")
+
+    # Subcommand: menu / dashboard
+    p_menu = subparsers.add_parser("menu", aliases=["dashboard"], add_help=False, help="Open interactive Quick Actions menu")
+    add_color_args(p_menu)
+    p_menu.add_argument("-d", "--dir", default=".", help="Source directory (default: .)")
+    p_menu.add_argument("-h", "--help", action="store_true", help="Show help")
 
     # Subcommand: build
     p_build = subparsers.add_parser("build", add_help=False)
@@ -283,9 +547,16 @@ def main(argv: Sequence[str] | None = None) -> int:
         return cmd_serve(args)
     elif args.command in {"list", "ls"}:
         return cmd_list(args)
+    elif args.command == "status":
+        print_status_dashboard(getattr(args, "dir", "."))
+        return 0
+    elif args.command in {"menu", "dashboard"}:
+        scripts = print_status_dashboard(getattr(args, "dir", "."))
+        return run_interactive_menu(scripts)
     else:
-        # If no subcommand provided, show help
-        print_help()
+        scripts = print_status_dashboard()
+        if sys.stdin.isatty():
+            return run_interactive_menu(scripts)
         return 0
 
 

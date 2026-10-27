@@ -79,3 +79,53 @@ def test_cli_build_with_failure(tmp_path: Path) -> None:
     dist_dir = tmp_path / "dist"
     code = main(["build", "-d", str(tmp_path), "-o", str(dist_dir)])
     assert code == 1
+
+
+def test_cli_dashboard_no_args(capsys: pytest.CaptureFixture[str]) -> None:
+    code = main([])
+    assert code == 0
+    captured = capsys.readouterr()
+    assert "BAROGRAPH PLOT RUNNER & PREVIEW SERVER" in captured.out
+    assert "Engine Version:" in captured.out
+    assert "Plot Backends:" in captured.out
+    assert "Export Defaults:" in captured.out
+
+
+def test_cli_status_subcommand(capsys: pytest.CaptureFixture[str]) -> None:
+    code = main(["status"])
+    assert code == 0
+    captured = capsys.readouterr()
+    assert "BAROGRAPH PLOT RUNNER & PREVIEW SERVER" in captured.out
+    assert "Host & Runtime:" in captured.out
+
+
+def test_cli_interactive_menu_exit(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    import sys
+    from barograph.ui import ui
+
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
+    monkeypatch.setattr(ui, "select", lambda title, options, **kwargs: "exit")
+
+    code = main([])
+    assert code == 0
+    captured = capsys.readouterr()
+    assert "BAROGRAPH PLOT RUNNER & PREVIEW SERVER" in captured.out
+
+
+def test_cli_interactive_menu_list(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    import sys
+    from barograph.ui import ui
+
+    (tmp_path / "plot_demo.py").write_text("fig = 1")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
+    monkeypatch.setattr(ui, "select", lambda title, options, **kwargs: "list")
+
+    code = main([])
+    assert code == 0
+    captured = capsys.readouterr()
+    assert "BAROGRAPH PLOT RUNNER & PREVIEW SERVER" in captured.out
+    assert "plot_demo.py" in captured.out
+
