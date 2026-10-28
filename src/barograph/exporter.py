@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from barograph.runner import detect_backend
+from barograph.runner import detect_backend, extract_title_from_figure
 
 
 class ExportError(Exception):
@@ -97,7 +97,7 @@ def wrap_svg_in_html(svg_content: str, title: str = "Barograph Figure Preview") 
 """
 
 
-def render_to_html_string(figure: Any, title: str = "Barograph Figure Preview") -> str:
+def render_to_html_string(figure: Any, title: str | None = None) -> str:
     """Render any supported figure object directly to an HTML string.
 
     For Plotly figures, uses .to_html() with CDN assets and full viewport height.
@@ -107,19 +107,7 @@ def render_to_html_string(figure: Any, title: str = "Barograph Figure Preview") 
     import tempfile
 
     backend = detect_backend(figure)
-
-    if isinstance(figure, str):
-        stripped = figure.strip()
-        if stripped.startswith("<!DOCTYPE") or "<html" in stripped or "<div" in stripped:
-            return figure
-        return wrap_svg_in_html(figure, title=title)
-
-    if hasattr(figure, "_repr_html_") and callable(figure._repr_html_):
-        rep = figure._repr_html_()
-        if isinstance(rep, str):
-            if rep.strip().startswith("<!DOCTYPE") or "<html" in rep:
-                return rep
-            return wrap_svg_in_html(rep, title=title)
+    resolved_title = title or extract_title_from_figure(figure) or "Barograph Figure Preview"
 
     if backend == "plotly":
         if hasattr(figure, "to_html") and callable(figure.to_html):
@@ -174,7 +162,7 @@ def render_to_html_string(figure: Any, title: str = "Barograph Figure Preview") 
             finally:
                 if os.path.exists(tname):
                     os.unlink(tname)
-        return wrap_svg_in_html(svg_str, title=title)
+        return wrap_svg_in_html(svg_str, title=resolved_title)
 
     if backend == "altair" or hasattr(figure, "to_html") or hasattr(figure, "save"):
         if hasattr(figure, "to_html") and callable(figure.to_html):
@@ -190,8 +178,21 @@ def render_to_html_string(figure: Any, title: str = "Barograph Figure Preview") 
                 if os.path.exists(tname):
                     os.unlink(tname)
 
+    if isinstance(figure, str):
+        stripped = figure.strip()
+        if stripped.startswith("<!DOCTYPE") or "<html" in stripped or "<div" in stripped:
+            return figure
+        return wrap_svg_in_html(figure, title=resolved_title)
+
+    if hasattr(figure, "_repr_html_") and callable(figure._repr_html_):
+        rep = figure._repr_html_()
+        if isinstance(rep, str):
+            if rep.strip().startswith("<!DOCTYPE") or "<html" in rep:
+                return rep
+            return wrap_svg_in_html(rep, title=resolved_title)
+
     # Fallback to string representation if nothing else
-    return wrap_svg_in_html(f"<pre>{str(figure)}</pre>", title=title)
+    return wrap_svg_in_html(f"<pre>{str(figure)}</pre>", title=resolved_title)
 
 
 def export_figure(
@@ -200,6 +201,7 @@ def export_figure(
     source_script: str | Path | None = None,
     target_format: str = "html",
     dpi: int = 300,
+    title: str | None = None,
 ) -> ExportResult:
     """Export a figure to disk using the appropriate backend router.
 
@@ -209,6 +211,7 @@ def export_figure(
         source_script: Source Python script path (for logging/metadata).
         target_format: Requested format ('html', 'svg', 'png', 'pdf', 'webp', etc.).
         dpi: Resolution for static Matplotlib raster exports.
+        title: Optional plot title to embed in HTML exports.
 
     Returns:
         ExportResult describing the outcome.
@@ -223,18 +226,12 @@ def export_figure(
     fmt = target_format.lower().lstrip(".")
     backend = detect_backend(figure)
 
-    if isinstance(figure, str):
-        stripped = figure.strip()
-        if stripped.startswith("<!DOCTYPE") or "<html" in stripped or "<div" in stripped:
-            return figure
-        return wrap_svg_in_html(figure, title=title)
-
-    if hasattr(figure, "_repr_html_") and callable(figure._repr_html_):
-        rep = figure._repr_html_()
-        if isinstance(rep, str):
-            if rep.strip().startswith("<!DOCTYPE") or "<html" in rep:
-                return rep
-            return wrap_svg_in_html(rep, title=title)
+    resolved_title = (
+        title
+        or extract_title_from_figure(figure)
+        or (src_path.stem if src_path else out_file.stem)
+        or "Barograph Figure"
+    )
 
     degraded = False
     degraded_reason = None
@@ -308,7 +305,7 @@ def export_figure(
                 try:
                     from bokeh.embed import file_html
                     from bokeh.resources import CDN
-                    html_str = file_html(figure, CDN, "Bokeh Plot")
+                    html_str = file_html(figure, CDN, resolved_title)
                     out_file.write_text(html_str, encoding="utf-8")
                 except Exception as e:
                     raise ExportError(f"Bokeh HTML export failed: {e}") from e
@@ -326,8 +323,28 @@ def export_figure(
 
     else:
         # Generic fallback
-        if isinstance(figure, str) and fmt == "html":
-            out_file.write_text(figure, encoding="utf-8")
+        if isinstance(figure, str):
+            stripped = figure.strip()
+            if fmt == "html":
+                if stripped.startswith("<!DOCTYPE") or "<html" in stripped:
+                    out_file.write_text(figure, encoding="utf-8")
+                elif "<svg" in stripped:
+                    out_file.write_text(wrap_svg_in_html(figure, title=resolved_title), encoding="utf-8")
+                else:
+                    out_file.write_text(wrap_svg_in_html(f"<pre>{figure}</pre>", title=resolved_title), encoding="utf-8")
+            elif fmt == "svg" and "<svg" in stripped:
+                out_file.write_text(figure, encoding="utf-8")
+            else:
+                out_file.write_text(figure, encoding="utf-8")
+        elif hasattr(figure, "_repr_html_") and callable(figure._repr_html_) and fmt == "html":
+            rep = figure._repr_html_()
+            if isinstance(rep, str):
+                if rep.strip().startswith("<!DOCTYPE") or "<html" in rep:
+                    out_file.write_text(rep, encoding="utf-8")
+                else:
+                    out_file.write_text(wrap_svg_in_html(rep, title=resolved_title), encoding="utf-8")
+            else:
+                out_file.write_text(str(rep), encoding="utf-8")
         elif hasattr(figure, "export") and callable(figure.export):
             figure.export(str(out_file))
         elif hasattr(figure, "write_html") and fmt == "html":

@@ -5,12 +5,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "barograph"
 version = "0.1.0"
-description = "Universal batch runner, multi-backend export engine, and live-reloading preview server for Python plotting scripts"
+description = "Universal batch runner and multi-backend export engine for Python plotting scripts"
 readme = "README.md"
 authors = [{ name = "SpanishSyntax", email = "spanishsyntax@pyritelabs.cc" }]
 license = { text = "MIT" }
 requires-python = ">=3.11"
-keywords = ["plot", "plotting", "plotly", "matplotlib", "seaborn", "preview", "live-reload", "cli", "frost"]
+keywords = ["plot", "plotting", "plotly", "matplotlib", "seaborn", "cli", "frost", "export"]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Environment :: Console",

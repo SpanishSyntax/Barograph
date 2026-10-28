@@ -36,11 +36,87 @@ class ScriptExecutionError(Exception):
 class ExecutionResult:
     """Encapsulates the output of executing a standalone plotting script."""
 
-    script_path: Path
     figure: Any
     backend: str
     execution_time_ms: float
+    metadata: dict[str, Any]
+    script_path: Path
     module: ModuleType
+
+
+def extract_title_from_figure(figure: Any) -> str | None:
+    """Extract title text from Plotly, Matplotlib, Seaborn, Bokeh, or Altair figure."""
+    if figure is None:
+        return None
+
+    # 1. Plotly
+    if hasattr(figure, "layout"):
+        layout = getattr(figure, "layout", None)
+        title_obj = getattr(layout, "title", None)
+        if title_obj is not None:
+            if isinstance(title_obj, str) and title_obj.strip():
+                return title_obj.strip()
+            if hasattr(title_obj, "text") and isinstance(title_obj.text, str) and title_obj.text.strip():
+                return title_obj.text.strip()
+            if isinstance(title_obj, dict) and "text" in title_obj and title_obj["text"]:
+                return str(title_obj["text"]).strip()
+
+    # 2. Matplotlib / Seaborn
+    if hasattr(figure, "_suptitle") and figure._suptitle is not None:
+        if hasattr(figure._suptitle, "get_text"):
+            text = figure._suptitle.get_text().strip()
+            if text:
+                return text
+
+    if hasattr(figure, "axes"):
+        for ax in figure.axes:
+            if hasattr(ax, "get_title"):
+                text = ax.get_title().strip()
+                if text:
+                    return text
+
+    # 3. Bokeh
+    if hasattr(figure, "title"):
+        title_obj = getattr(figure, "title", None)
+        if isinstance(title_obj, str) and title_obj.strip():
+            return title_obj.strip()
+        if hasattr(title_obj, "text") and isinstance(title_obj.text, str) and title_obj.text.strip():
+            return title_obj.text.strip()
+
+    # 4. Altair
+    if hasattr(figure, "title"):
+        title_obj = getattr(figure, "title", None)
+        if isinstance(title_obj, str) and title_obj.strip():
+            return title_obj.strip()
+
+    return None
+
+
+def extract_metadata(module: ModuleType, figure: Any, path: Path) -> dict[str, Any]:
+    """Extract metadata including title and docstring description from executed module and figure."""
+    doc = module.__doc__
+    doc_title: str | None = None
+    description: str | None = None
+
+    if doc:
+        stripped_doc = doc.strip()
+        lines = [line.strip() for line in stripped_doc.splitlines() if line.strip()]
+        if lines:
+            doc_title = lines[0].rstrip(".")
+            if len(lines) > 1:
+                description = "\n".join(lines[1:])
+            else:
+                description = stripped_doc
+
+    figure_title = extract_title_from_figure(figure)
+    title = figure_title or doc_title or path.stem
+
+    return {
+        "title": title,
+        "description": description,
+        "docstring": doc,
+        "figure_title": figure_title,
+    }
 
 
 def detect_backend(fig: Any) -> str:
@@ -285,11 +361,13 @@ def run_script(
         )
 
     backend = detect_backend(figure)
+    metadata = extract_metadata(module, figure, path)
 
     return ExecutionResult(
-        script_path=path,
         figure=figure,
         backend=backend,
         execution_time_ms=elapsed_ms,
+        metadata=metadata,
+        script_path=path,
         module=module,
     )

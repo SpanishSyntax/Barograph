@@ -14,6 +14,9 @@ def test_cli_help(capsys: pytest.CaptureFixture[str]) -> None:
     captured = capsys.readouterr()
     assert "Usage:" in captured.out
     assert "barograph build" in captured.out
+    assert "barograph list" in captured.out
+    assert "barograph status" in captured.out
+    assert "serve" not in captured.out
 
 
 def test_cli_version(capsys: pytest.CaptureFixture[str]) -> None:
@@ -85,7 +88,7 @@ def test_cli_dashboard_no_args(capsys: pytest.CaptureFixture[str]) -> None:
     code = main([])
     assert code == 0
     captured = capsys.readouterr()
-    assert "BAROGRAPH PLOT RUNNER & PREVIEW SERVER" in captured.out
+    assert "BAROGRAPH PLOT RUNNER & EXPORT ENGINE" in captured.out
     assert "Engine Version:" in captured.out
     assert "Plot Backends:" in captured.out
     assert "Export Defaults:" in captured.out
@@ -95,7 +98,7 @@ def test_cli_status_subcommand(capsys: pytest.CaptureFixture[str]) -> None:
     code = main(["status"])
     assert code == 0
     captured = capsys.readouterr()
-    assert "BAROGRAPH PLOT RUNNER & PREVIEW SERVER" in captured.out
+    assert "BAROGRAPH PLOT RUNNER & EXPORT ENGINE" in captured.out
     assert "Host & Runtime:" in captured.out
 
 
@@ -109,7 +112,7 @@ def test_cli_interactive_menu_exit(monkeypatch: pytest.MonkeyPatch, capsys: pyte
     code = main([])
     assert code == 0
     captured = capsys.readouterr()
-    assert "BAROGRAPH PLOT RUNNER & PREVIEW SERVER" in captured.out
+    assert "BAROGRAPH PLOT RUNNER & EXPORT ENGINE" in captured.out
 
 
 def test_cli_interactive_menu_list(
@@ -126,6 +129,6 @@ def test_cli_interactive_menu_list(
     code = main([])
     assert code == 0
     captured = capsys.readouterr()
-    assert "BAROGRAPH PLOT RUNNER & PREVIEW SERVER" in captured.out
+    assert "BAROGRAPH PLOT RUNNER & EXPORT ENGINE" in captured.out
     assert "plot_demo.py" in captured.out
 

@@ -15,7 +15,6 @@ from barograph import __version__
 from barograph.discovery import discover_scripts, resolve_target
 from barograph.exporter import export_figure
 from barograph.runner import FigureNotFoundError, ScriptExecutionError, run_script
-from barograph.server import PreviewServer
 from barograph.ui import (
     add_color_args,
     apply_color_args,
@@ -106,7 +105,7 @@ def print_status_dashboard(base_dir: str | Path = ".") -> list[Path]:
         scripts_display = ui.dim("no plot scripts found (plot*.py)")
 
     lines = [
-        f"{ui.bold('Engine Version:')}   {ui.bold_cyan(f'v{__version__}')} (Interactive Hub & Live Preview)",
+        f"{ui.bold('Engine Version:')}   {ui.bold_cyan(f'v{__version__}')} (Pure Figure Extraction & Multi-Backend Export Engine)",
         f"{ui.bold('Host & Runtime:')}   {host} — {distro} ({py_ver})",
         f"{ui.bold('Workspace Git:')}   {ws.name} ({ui.dim(git_info)})",
         f"{ui.bold('Environment:')}     {env_status}",
@@ -115,7 +114,7 @@ def print_status_dashboard(base_dir: str | Path = ".") -> list[Path]:
         f"{ui.bold('Export Defaults:')} {ui.cyan('./dist')} (Formats: html, svg, png, pdf, webp)",
     ]
 
-    ui.panel("BAROGRAPH PLOT RUNNER & PREVIEW SERVER", lines, border_color="0;35")
+    ui.panel("BAROGRAPH PLOT RUNNER & EXPORT ENGINE", lines, border_color="0;35")
     return scripts
 
 
@@ -124,22 +123,6 @@ def run_interactive_menu(scripts: list[Path]) -> int:
     actions: list[tuple[str, str, str]] = []
 
     if scripts:
-        primary = scripts[0]
-        actions.append(
-            (
-                "serve",
-                f"Start Live Preview Server ({primary.name})",
-                "Launch live-reloading preview server with browser hot-reload",
-            )
-        )
-        if len(scripts) > 1:
-            actions.append(
-                (
-                    "serve-select",
-                    "Select Script for Live Preview...",
-                    f"Choose one of {len(scripts)} discovered plot scripts to preview",
-                )
-            )
         actions.append(
             (
                 "build",
@@ -155,13 +138,6 @@ def run_interactive_menu(scripts: list[Path]) -> int:
             )
         )
     else:
-        actions.append(
-            (
-                "serve",
-                "Start Live Preview Server",
-                "Launch preview server on plot.py or index.html",
-            )
-        )
         actions.append(
             (
                 "build",
@@ -188,36 +164,6 @@ def run_interactive_menu(scripts: list[Path]) -> int:
 
     if not action or action == "exit":
         return 0
-
-    if action == "serve":
-        target = str(scripts[0]) if scripts else None
-        return cmd_serve(
-            argparse.Namespace(
-                target=target,
-                port=0,
-                host="127.0.0.1",
-                no_open=False,
-                verbose=False,
-            )
-        )
-
-    if action == "serve-select":
-        options = [
-            (str(s), s.name, f"{s.stat().st_size / 1024.0:.1f} KB")
-            for s in scripts
-        ]
-        chosen = ui.select("Select plot script for live preview:", options)
-        if not chosen:
-            return 0
-        return cmd_serve(
-            argparse.Namespace(
-                target=chosen,
-                port=0,
-                host="127.0.0.1",
-                no_open=False,
-                verbose=False,
-            )
-        )
 
     if action == "build":
         return cmd_build(
@@ -275,20 +221,21 @@ def run_interactive_menu(scripts: list[Path]) -> int:
 
 
 def print_help() -> None:
-    """Print colored usage instructions matching Flaker, Folio, Borealis, Glaze, and Firn."""
-    print(f"""{ui.badge()} {ui.bold("Universal Plot Batch-Runner, Multi-Backend Exporter & Preview Server")}
+    """Print colored usage instructions matching Frost ecosystem conventions."""
+    print(f"""{ui.badge()} {ui.bold("Universal Plot Batch-Runner & Multi-Backend Exporter")}
 
 {ui.blue("Usage:")}
   barograph                              Open interactive status dashboard & quick actions
   barograph status                       Display host, runtime, backends & script dashboard
+  barograph menu                         Open interactive Quick Actions menu
   barograph build [options]              Batch execute and export standalone plotting scripts
-  barograph serve [target] [options]     Live-reload preview server with browser sync
   barograph list [options]               Discover and inspect local plotting scripts
   barograph <command> [options]
 
-{ui.blue("Interactive & Dashboard Commands:")}
+{ui.blue("Interactive & Inspection Commands:")}
   status                 Display live host, runtime, plot backends & script dashboard
-  menu                   Open the interactive Quick Actions menu
+  menu                   Open the interactive Quick Actions menu (alias: dashboard)
+  list                   Discover and inspect local plotting scripts (alias: ls)
 
 {ui.blue("Build Options:")}
   -d, --dir DIR          Source directory containing plot scripts (default: current directory)
@@ -296,13 +243,13 @@ def print_help() -> None:
   -f, --format FMT       Target format: html, svg, png, pdf, webp (default: html)
   -p, --pattern PAT      Script filename glob pattern (default: plot*.py)
   -r, --recursive        Scan subdirectories recursively
-  --all                  Include all matching scripts regardless of depth
+  -a, --all              Include all matching scripts regardless of depth
 
-{ui.blue("Serve Options:")}
-  [target]               Script (e.g. plot_traj.py) or .html file (default: auto-detected)
-  -p, --port PORT        Port to bind HTTP server to (default: 0 for ephemeral port)
-  --host HOST            Host to bind HTTP server to (default: 127.0.0.1)
-  --no-open              Do not automatically open the dashboard in browser
+{ui.blue("List Options:")}
+  -d, --dir DIR          Source directory to inspect (default: current directory)
+  -p, --pattern PAT      Script filename glob pattern (default: plot*.py)
+  -r, --recursive        Scan subdirectories recursively
+  -a, --all              Include all matching scripts regardless of depth
 
 {ui.blue("General Options:")}
   --color MODE           Color output mode: auto, always, never (default: auto)
@@ -359,6 +306,7 @@ def cmd_build(args: argparse.Namespace) -> int:
                 output_path=dest_file,
                 source_script=script,
                 target_format=target_format,
+                title=res.metadata.get("title"),
             )
 
             success_count += 1
@@ -408,24 +356,6 @@ def cmd_build(args: argparse.Namespace) -> int:
             f"Completed with {failure_count} failure{'s' if failure_count != 1 else ''} ({success_count} succeeded) {ui.dim(f'in {total_sec:.2f}s')}"
         )
         return 1
-
-
-def cmd_serve(args: argparse.Namespace) -> int:
-    """Launch live-reloading preview server on target script or HTML file."""
-    try:
-        target = resolve_target(args.target)
-    except FileNotFoundError as e:
-        ui.error(str(e))
-        return 1
-
-    server = PreviewServer(
-        target_path=target,
-        host=args.host,
-        port=args.port,
-        open_browser=not args.no_open,
-    )
-    server.start()
-    return 0
 
 
 def cmd_list(args: argparse.Namespace) -> int:
@@ -488,7 +418,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     # Build primary parser
     parser = argparse.ArgumentParser(
         prog="barograph",
-        description="Universal batch runner, multi-backend export engine, and live-reloading preview server for Python plotting scripts",
+        description="Universal batch runner and multi-backend export engine for Python plotting scripts",
         add_help=False,
     )
     add_color_args(parser)
@@ -528,16 +458,6 @@ def main(argv: Sequence[str] | None = None) -> int:
     p_build.add_argument("-v", "--verbose", action="store_true", help="Verbose error output")
     p_build.add_argument("-h", "--help", action="store_true", help="Show help")
 
-    # Subcommand: serve
-    p_serve = subparsers.add_parser("serve", add_help=False)
-    add_color_args(p_serve)
-    p_serve.add_argument("target", nargs="?", default=None, help="Target script or HTML file")
-    p_serve.add_argument("-p", "--port", type=int, default=0, help="Port to bind (default: 0)")
-    p_serve.add_argument("--host", default="127.0.0.1", help="Host to bind (default: 127.0.0.1)")
-    p_serve.add_argument("--no-open", action="store_true", help="Do not automatically open browser")
-    p_serve.add_argument("-v", "--verbose", action="store_true", help="Verbose error output")
-    p_serve.add_argument("-h", "--help", action="store_true", help="Show help")
-
     # Subcommand: list / ls
     p_list = subparsers.add_parser("list", aliases=["ls"], add_help=False)
     add_color_args(p_list)
@@ -561,8 +481,6 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.command == "build":
         return cmd_build(args)
-    elif args.command == "serve":
-        return cmd_serve(args)
     elif args.command in {"list", "ls"}:
         return cmd_list(args)
     elif args.command == "status":

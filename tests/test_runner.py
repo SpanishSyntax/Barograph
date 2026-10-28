@@ -211,3 +211,34 @@ raise ValueError("Intentional script failure")
         run_script(script)
     assert "Intentional script failure" in str(exc_info.value)
     assert exc_info.value.tb_text is not None
+
+
+def test_run_script_metadata_and_title(tmp_path: Path) -> None:
+    script = tmp_path / "plot_meta.py"
+    script.write_text('''"""SC42056 Algorithm: Feasible Polytope.
+
+Detailed explanation of the optimization geometry.
+Second line of description.
+"""
+class MockLayout:
+    class Title:
+        text = "Polytope Geometry Plot"
+    title = Title()
+
+class MockFig:
+    layout = MockLayout()
+    def write_html(self, path, **kwargs):
+        pass
+    def to_plotly_json(self):
+        return {}
+
+fig = MockFig()
+''')
+    res = run_script(script)
+    assert res.figure is not None
+    assert res.backend == "plotly"
+    assert res.execution_time_ms > 0
+    assert isinstance(res.metadata, dict)
+    assert res.metadata["title"] == "Polytope Geometry Plot"
+    assert "Detailed explanation" in res.metadata["description"]
+    assert "SC42056 Algorithm: Feasible Polytope" in res.metadata["docstring"]

@@ -1,5 +1,5 @@
 {
-  description = "Barograph - Universal Batch Runner, Multi-Backend Export Engine & Live-Reloading Preview Server for Python Plotting Scripts";
+  description = "Barograph - Universal Batch Runner & Multi-Backend Export Engine for Python Plotting Scripts";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
@@ -46,7 +46,7 @@
         doCheck = false;
 
         meta = with lib; {
-          description = "Batch runner, multi-backend export engine, and live-reloading preview server for Python plotting scripts";
+          description = "Pure, fast figure extraction and multi-backend batch export engine for Python plotting scripts";
           homepage = "https://github.com/SpanishSyntax/Barograph";
           license = licenses.mit;
           mainProgram = "barograph";
@@ -70,11 +70,16 @@
       };
 
       devShells.default = pkgs.mkShell {
-        packages = with pkgs; [
-          python3
-          python3Packages.setuptools
-          python3Packages.pytest
-          python3Packages.prism
+        packages = [
+          (pkgs.python3.withPackages (ps: [
+            ps.setuptools
+            ps.pytest
+            ps.prism
+            ps.plotly
+            ps.matplotlib
+            ps.kaleido
+            ps.numpy
+          ]))
         ];
       };
     })
@@ -98,7 +103,7 @@
           system = pkgs.stdenv.hostPlatform.system;
         in {
           options.programs.barograph = {
-            enable = lib.mkEnableOption "Barograph - Python plotting runner, exporter & preview server";
+            enable = lib.mkEnableOption "Barograph - Python plotting runner & export engine";
             package = lib.mkOption {
               type = lib.types.package;
               default = self.packages.${system}.default;
@@ -125,7 +130,7 @@
           defaultBarograph = self.packages.${system}.default;
         in {
           options.programs.barograph = {
-            enable = lib.mkEnableOption "Barograph - Python plotting runner, exporter & preview server";
+            enable = lib.mkEnableOption "Barograph - Python plotting runner & export engine";
 
             package = lib.mkOption {
               type = lib.types.package;

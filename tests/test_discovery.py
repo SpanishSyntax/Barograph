@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 import pytest
 
-from barograph.discovery import discover_scripts, is_ignored, resolve_target
+from barograph.discovery import discover_plot_scripts, discover_scripts, is_ignored, resolve_target
 
 
 def test_is_ignored() -> None:
@@ -26,6 +26,10 @@ def test_discover_scripts_flat(tmp_path: Path) -> None:
     results = discover_scripts(tmp_path)
     assert len(results) == 2
     assert [p.name for p in results] == ["plot_a.py", "plot_b.py"]
+
+    # Verify discover_plot_scripts alias behaves identically
+    alias_results = discover_plot_scripts(tmp_path)
+    assert alias_results == results
 
 
 def test_discover_scripts_recursive(tmp_path: Path) -> None:

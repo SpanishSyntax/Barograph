@@ -67,6 +67,10 @@ def discover_scripts(
     return sorted(matched)
 
 
+# Public alias for first-class library API
+discover_plot_scripts = discover_scripts
+
+
 def resolve_target(
     target: str | Path | None = None,
     base_dir: str | Path = ".",
@@ -122,3 +126,12 @@ def resolve_target(
     raise FileNotFoundError(
         f"No plotting script (plot*.py) or HTML dashboard found in {base}."
     )
+
+
+__all__ = [
+    "discover_scripts",
+    "discover_plot_scripts",
+    "resolve_target",
+    "is_ignored",
+    "IGNORE_DIRS",
+]

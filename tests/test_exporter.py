@@ -99,3 +99,33 @@ def test_export_creates_parent_directories(tmp_path: Path) -> None:
 
     res = export_figure(fig, nested_out, target_format="html")
     assert nested_out.is_file()
+
+
+def test_export_figure_with_repr_html(tmp_path: Path) -> None:
+    class DummyReprHtml:
+        def _repr_html_(self) -> str:
+            return "<svg><rect width='100' height='100'/></svg>"
+
+    fig = DummyReprHtml()
+    out = tmp_path / "repr.html"
+    res = export_figure(fig, out, target_format="html", title="Custom Title")
+    assert res.output_path == out
+    assert out.is_file()
+    content = out.read_text()
+    assert "Custom Title" in content
+    assert "<svg>" in content
+
+
+def test_export_figure_string_html_and_svg(tmp_path: Path) -> None:
+    svg_str = "<svg><line x1='0' y1='0' x2='10' y2='10'/></svg>"
+    out_svg = tmp_path / "direct.svg"
+    res = export_figure(svg_str, out_svg, target_format="svg")
+    assert res.output_path == out_svg
+    assert out_svg.is_file()
+    assert "<line" in out_svg.read_text()
+
+    out_html = tmp_path / "wrapped.html"
+    res = export_figure(svg_str, out_html, target_format="html")
+    assert res.output_path == out_html
+    assert out_html.is_file()
+    assert "<!DOCTYPE html>" in out_html.read_text()
