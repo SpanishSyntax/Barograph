@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from barograph.runner import detect_backend, extract_title_from_figure
+from barograph.runner import detect_backend, ensure_plotly_uirevision, extract_title_from_figure
 
 
 class ExportError(Exception):
@@ -110,6 +110,7 @@ def render_to_html_string(figure: Any, title: str | None = None) -> str:
     resolved_title = title or extract_title_from_figure(figure) or "Barograph Figure Preview"
 
     if backend == "plotly":
+        ensure_plotly_uirevision(figure)
         if hasattr(figure, "to_html") and callable(figure.to_html):
             return figure.to_html(
                 include_plotlyjs="cdn",
@@ -239,6 +240,7 @@ def export_figure(
 
     # Backend routing
     if backend == "plotly":
+        ensure_plotly_uirevision(figure)
         if fmt == "html":
             try:
                 figure.write_html(

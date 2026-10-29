@@ -119,6 +119,24 @@ def extract_metadata(module: ModuleType, figure: Any, path: Path) -> dict[str, A
     }
 
 
+def ensure_plotly_uirevision(fig: Any, default_revision: str = "barograph-persist") -> None:
+    """Ensure Plotly figure preserves 3D camera angles and 2D zoom/pan across updates."""
+    if fig is None:
+        return
+    if hasattr(fig, "layout"):
+        layout = getattr(fig, "layout", None)
+        if layout is not None and getattr(layout, "uirevision", None) is None:
+            try:
+                fig.layout.uirevision = default_revision
+            except Exception:
+                pass
+    elif hasattr(fig, "update_layout") and callable(fig.update_layout):
+        try:
+            fig.update_layout(uirevision=default_revision)
+        except Exception:
+            pass
+
+
 def detect_backend(fig: Any) -> str:
     """Identify the rendering backend for a given figure object."""
     type_name = type(fig).__name__
@@ -361,6 +379,8 @@ def run_script(
         )
 
     backend = detect_backend(figure)
+    if backend == "plotly":
+        ensure_plotly_uirevision(figure)
     metadata = extract_metadata(module, figure, path)
 
     return ExecutionResult(

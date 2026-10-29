@@ -242,3 +242,35 @@ fig = MockFig()
     assert res.metadata["title"] == "Polytope Geometry Plot"
     assert "Detailed explanation" in res.metadata["description"]
     assert "SC42056 Algorithm: Feasible Polytope" in res.metadata["docstring"]
+
+
+def test_ensure_plotly_uirevision(tmp_path: Path) -> None:
+    class MockLayout:
+        uirevision = None
+
+    class MockFig:
+        def __init__(self):
+            self.layout = MockLayout()
+        def write_html(self, path, **kwargs):
+            pass
+        def to_plotly_json(self):
+            return {}
+
+    script = tmp_path / "plot_uirevision.py"
+    script.write_text("""
+class MockLayout:
+    uirevision = None
+
+class MockFig:
+    def __init__(self):
+        self.layout = MockLayout()
+    def write_html(self, path, **kwargs):
+        pass
+    def to_plotly_json(self):
+        return {}
+
+fig = MockFig()
+""")
+    res = run_script(script)
+    assert res.backend == "plotly"
+    assert res.figure.layout.uirevision == "barograph-persist"
