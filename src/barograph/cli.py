@@ -114,6 +114,24 @@ def print_status_dashboard(base_dir: str | Path = ".") -> list[Path]:
         f"{ui.bold('Export Defaults:')} {ui.cyan('./dist')} (Formats: html, svg, png, pdf, webp)",
     ]
 
+    if ui.is_json:
+        import json
+
+        data = {
+            "app": "barograph",
+            "version": __version__,
+            "python": platform.python_version(),
+            "host": host,
+            "os": distro,
+            "workspace": str(ws),
+            "git": git_info,
+            "backends": {name: ok for name, ok in backends},
+            "scripts_count": len(scripts),
+            "scripts": [s.name for s in scripts],
+        }
+        print(json.dumps(data, indent=2))
+        return scripts
+
     ui.panel("BAROGRAPH PLOT RUNNER & EXPORT ENGINE", lines, border_color="0;35")
     return scripts
 
@@ -222,6 +240,31 @@ def run_interactive_menu(scripts: list[Path]) -> int:
 
 def print_help() -> None:
     """Print colored usage instructions matching Frost ecosystem conventions."""
+    if ui.is_agent:
+        print(f"""Barograph v{__version__} - Universal Plot Batch-Runner & Multi-Backend Exporter
+Usage: barograph [command] [options]
+
+Commands:
+  status                 Display host, runtime, backends & script dashboard
+  build [options]        Batch execute and export standalone plotting scripts
+  list [options]         Discover and inspect local plotting scripts (alias: ls)
+
+Options:
+  -A, --agent            Compact machine/agent friendly output mode
+  --json                 Structured JSON output mode
+  -d, --dir DIR          Source directory containing plot scripts (default: .)
+  -o, --out DIR          Target export directory (default: ./dist)
+  -f, --format FMT       Target format: html, svg, png, pdf, webp (default: html)
+  -p, --pattern PAT      Script filename glob pattern (default: plot*.py)
+  -r, --recursive        Scan subdirectories recursively
+  --color MODE           Color output mode: auto, always, never
+  --no-color             Disable colored output
+  -v, --verbose          Show detailed error traces
+  -V, --version          Show version number
+  -h, --help             Show this help message
+""")
+        return
+
     print(f"""{ui.badge()} {ui.bold("Universal Plot Batch-Runner & Multi-Backend Exporter")}
 
 {ui.blue("Usage:")}
@@ -345,6 +388,21 @@ def cmd_build(args: argparse.Namespace) -> int:
                 traceback.print_exc()
 
     total_sec = time.perf_counter() - start_total
+    if ui.is_json:
+        import json
+
+        data = {
+            "status": "ok" if failure_count == 0 else "error",
+            "succeeded": success_count,
+            "failed": failure_count,
+            "total": len(scripts),
+            "output_dir": str(out_dir),
+            "format": target_format,
+            "duration_seconds": round(total_sec, 2),
+        }
+        print(json.dumps(data, indent=2))
+        return 0 if failure_count == 0 else 1
+
     print()
     if failure_count == 0:
         ui.success(
@@ -369,6 +427,21 @@ def cmd_list(args: argparse.Namespace) -> int:
     except Exception as e:
         ui.error(f"Error searching directory {source_dir}: {e}")
         return 1
+
+    if ui.is_json:
+        import json
+
+        items = [
+            {
+                "file": str(s),
+                "name": s.name,
+                "relative": str(s.relative_to(source_dir)) if s.parent != source_dir else s.name,
+                "size_bytes": s.stat().st_size,
+            }
+            for s in scripts
+        ]
+        print(json.dumps({"status": "ok", "count": len(items), "scripts": items}, indent=2))
+        return 0
 
     if not scripts:
         ui.info(f"No scripts matching '{pattern}' found in {source_dir}")
@@ -405,13 +478,18 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
 
     if "-V" in raw_argv or "--version" in raw_argv or (len(raw_argv) == 1 and raw_argv[0] in {"-v", "version"}):
+        if ui.is_json:
+            import json
+
+            print(json.dumps({"app": "barograph", "version": __version__}))
+            return 0
         print(f"barograph {__version__}")
         return 0
 
     # If run without arguments, display status dashboard and interactive menu
     if not raw_argv:
         scripts = print_status_dashboard()
-        if sys.stdin.isatty():
+        if sys.stdin.isatty() and not ui.is_agent:
             return run_interactive_menu(scripts)
         return 0
 
