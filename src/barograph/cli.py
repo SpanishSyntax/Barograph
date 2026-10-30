@@ -19,6 +19,7 @@ from barograph.ui import (
     add_color_args,
     apply_color_args,
     handle_color_args,
+    handle_version_arg,
     render_error_panel,
     render_panel,
     ui,
@@ -115,8 +116,6 @@ def print_status_dashboard(base_dir: str | Path = ".") -> list[Path]:
     ]
 
     if ui.is_json:
-        import json
-
         data = {
             "app": "barograph",
             "version": __version__,
@@ -129,7 +128,7 @@ def print_status_dashboard(base_dir: str | Path = ".") -> list[Path]:
             "scripts_count": len(scripts),
             "scripts": [s.name for s in scripts],
         }
-        print(json.dumps(data, indent=2))
+        ui.json(data)
         return scripts
 
     ui.panel("BAROGRAPH PLOT RUNNER & EXPORT ENGINE", lines, border_color="0;35")
@@ -389,8 +388,6 @@ def cmd_build(args: argparse.Namespace) -> int:
 
     total_sec = time.perf_counter() - start_total
     if ui.is_json:
-        import json
-
         data = {
             "status": "ok" if failure_count == 0 else "error",
             "succeeded": success_count,
@@ -400,7 +397,7 @@ def cmd_build(args: argparse.Namespace) -> int:
             "format": target_format,
             "duration_seconds": round(total_sec, 2),
         }
-        print(json.dumps(data, indent=2))
+        ui.json(data)
         return 0 if failure_count == 0 else 1
 
     print()
@@ -429,8 +426,6 @@ def cmd_list(args: argparse.Namespace) -> int:
         return 1
 
     if ui.is_json:
-        import json
-
         items = [
             {
                 "file": str(s),
@@ -440,7 +435,7 @@ def cmd_list(args: argparse.Namespace) -> int:
             }
             for s in scripts
         ]
-        print(json.dumps({"status": "ok", "count": len(items), "scripts": items}, indent=2))
+        ui.json({"status": "ok", "count": len(items), "scripts": items})
         return 0
 
     if not scripts:
@@ -477,19 +472,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         print_help()
         return 0
 
-    if "-V" in raw_argv or "--version" in raw_argv or (len(raw_argv) == 1 and raw_argv[0] in {"-v", "version"}):
-        if ui.is_json:
-            import json
-
-            print(json.dumps({"app": "barograph", "version": __version__}))
-            return 0
-        print(f"barograph {__version__}")
+    if ui.handle_version_arg(raw_argv, __version__):
         return 0
 
     # If run without arguments, display status dashboard and interactive menu
     if not raw_argv:
         scripts = print_status_dashboard()
-        if sys.stdin.isatty() and not ui.is_agent:
+        if ui.is_interactive:
             return run_interactive_menu(scripts)
         return 0
 
