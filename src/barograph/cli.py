@@ -16,7 +16,9 @@ from barograph.discovery import discover_scripts
 from barograph.exporter import export_figure
 from barograph.runner import FigureNotFoundError, ScriptExecutionError, run_script
 from barograph.ui import (
+    add_agent_args,
     add_color_args,
+    handle_agent_args,
     handle_color_args,
     ui,
 )
@@ -365,13 +367,19 @@ def cmd_build(args: argparse.Namespace) -> int:
                     f"Matplotlib figure detected in {ui.bold(rel_name)}: "
                     f"gracefully degraded to SVG -> {ui.yellow(exp.output_path.name)}"
                 )
-                print(
-                    f"  \033[32m✓\033[0m {rel_name:<30} {backend_badge} -> {exp.output_path.name} {timing_str}"
-                )
+                if ui.is_agent:
+                    print(f"[barograph] [ok] {rel_name} -> {exp.output_path.name}")
+                else:
+                    print(
+                        f"  \033[32m✓\033[0m {rel_name:<30} {backend_badge} -> {exp.output_path.name} {timing_str}"
+                    )
             else:
-                print(
-                    f"  \033[32m✓\033[0m {rel_name:<30} {backend_badge} -> {exp.output_path.name} {timing_str}"
-                )
+                if ui.is_agent:
+                    print(f"[barograph] [ok] {rel_name} -> {exp.output_path.name}")
+                else:
+                    print(
+                        f"  \033[32m✓\033[0m {rel_name:<30} {backend_badge} -> {exp.output_path.name} {timing_str}"
+                    )
 
         except ScriptExecutionError as e:
             failure_count += 1
@@ -468,8 +476,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     except Exception:
         pass
 
-    # Apply color settings from argv
+    # Apply agent and color settings from argv
     try:
+        handle_agent_args(raw_argv)
         handle_color_args(raw_argv)
     except Exception:
         pass
@@ -500,6 +509,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         add_help=False,
     )
     add_color_args(parser)
+    add_agent_args(parser)
     parser.add_argument(
         "-v", "--verbose", action="store_true", help="Verbose error output"
     )
@@ -513,6 +523,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "status", add_help=False, help="Display status dashboard"
     )
     add_color_args(p_status)
+    add_agent_args(p_status)
     p_status.add_argument(
         "-d", "--dir", default=".", help="Source directory (default: .)"
     )
@@ -526,6 +537,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="Open interactive Quick Actions menu",
     )
     add_color_args(p_menu)
+    add_agent_args(p_menu)
     p_menu.add_argument(
         "-d", "--dir", default=".", help="Source directory (default: .)"
     )
@@ -534,6 +546,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     # Subcommand: build
     p_build = subparsers.add_parser("build", add_help=False)
     add_color_args(p_build)
+    add_agent_args(p_build)
     p_build.add_argument(
         "-d", "--dir", default=".", help="Source directory (default: .)"
     )
@@ -562,6 +575,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     # Subcommand: list / ls
     p_list = subparsers.add_parser("list", aliases=["ls"], add_help=False)
     add_color_args(p_list)
+    add_agent_args(p_list)
     p_list.add_argument(
         "-d", "--dir", default=".", help="Source directory (default: .)"
     )
