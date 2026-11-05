@@ -370,22 +370,21 @@ def cmd_build(args: argparse.Namespace) -> int:
                 if ui.is_agent:
                     print(f"[barograph] [ok] {rel_name} -> {exp.output_path.name}")
                 else:
-                    print(
-                        f"  \033[32m✓\033[0m {rel_name:<30} {backend_badge} -> {exp.output_path.name} {timing_str}"
-                    )
+                    ui.action(f"{rel_name:<30} {backend_badge} -> {exp.output_path.name} {timing_str}")
             else:
                 if ui.is_agent:
                     print(f"[barograph] [ok] {rel_name} -> {exp.output_path.name}")
                 else:
-                    print(
-                        f"  \033[32m✓\033[0m {rel_name:<30} {backend_badge} -> {exp.output_path.name} {timing_str}"
-                    )
+                    ui.action(f"{rel_name:<30} {backend_badge} -> {exp.output_path.name} {timing_str}")
 
         except ScriptExecutionError as e:
             failure_count += 1
             ui.error(f"Failed executing {ui.bold(rel_name)}: {e.original_exc}")
             if verbose and e.tb_text:
-                print(f"\033[31m{e.tb_text}\033[0m", file=sys.stderr)
+                if ui.is_agent:
+                    print(e.tb_text, file=sys.stderr)
+                else:
+                    print(ui.red(e.tb_text), file=sys.stderr)
 
         except FigureNotFoundError as e:
             failure_count += 1
