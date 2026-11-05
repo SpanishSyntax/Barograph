@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sys
-from typing import Any, Callable, Sequence
+from typing import Any, Sequence
 
 try:
     from prism import (
@@ -40,6 +40,7 @@ except ImportError:
 
     def strip_ansi(text: str) -> str:
         import re
+
         return re.sub(r"\x1b\[[0-9;]*[a-zA-Z]", "", text)
 
     def visual_len(text: str) -> int:
@@ -47,6 +48,7 @@ except ImportError:
 
     def get_terminal_columns() -> int:
         import shutil
+
         return shutil.get_terminal_size((80, 24)).columns
 
     def add_color_args(parser: Any) -> None:
@@ -83,7 +85,8 @@ except ImportError:
         title_clean = strip_ansi(title)
         title_seg = f" {title} " if title else ""
         top_fill = max(1, box_w - 3 - len(title_clean) - (2 if title else 0))
-        top = f"\033[{border_color}m╭─\033[0m{f'\033[1m{title_seg}\033[0m' if title else ''}\033[{border_color}m{'─' * top_fill}╮\033[0m"
+        title_hdr = f"\033[1m{title_seg}\033[0m" if title else ""
+        top = f"\033[{border_color}m╭─\033[0m{title_hdr}\033[{border_color}m{'─' * top_fill}╮\033[0m"
         bottom = f"\033[{border_color}m╰{'─' * (box_w - 2)}╯\033[0m"
         side = f"\033[{border_color}m│\033[0m"
         print(top, file=out)
@@ -127,7 +130,9 @@ except ImportError:
         except (EOFError, KeyboardInterrupt):
             return default
 
-    def select_menu(title: str, options: Sequence[Any], default_index: int = 0, **kwargs: Any) -> str:
+    def select_menu(
+        title: str, options: Sequence[Any], default_index: int = 0, **kwargs: Any
+    ) -> str:
         items = []
         for opt in options:
             if isinstance(opt, (list, tuple)):
@@ -147,7 +152,9 @@ except ImportError:
         except (EOFError, KeyboardInterrupt):
             return ""
 
-    def multiselect_menu(title: str, options: Sequence[Any], **kwargs: Any) -> list[str]:
+    def multiselect_menu(
+        title: str, options: Sequence[Any], **kwargs: Any
+    ) -> list[str]:
         return []
 
     class FallbackUI:
@@ -211,7 +218,13 @@ except ImportError:
             border_color: str = "0;35",
             width: int = 76,
         ) -> None:
-            render_panel(title=title, lines=lines, border_color=border_color, width=width, stream=sys.stdout)
+            render_panel(
+                title=title,
+                lines=lines,
+                border_color=border_color,
+                width=width,
+                stream=sys.stdout,
+            )
 
         def error_panel(self, title: str, lines: Sequence[str] | str) -> None:
             render_error_panel(title=title, lines=lines)
@@ -222,7 +235,9 @@ except ImportError:
             options: Sequence[Any],
             default_index: int = 0,
         ) -> str:
-            return select_menu(title=title, options=options, default_index=default_index)
+            return select_menu(
+                title=title, options=options, default_index=default_index
+            )
 
         def prompt(self, message: str, default: str = "") -> str:
             return prompt_input(message=message, default=default)

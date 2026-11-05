@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+
 import pytest
 
 from barograph.cli import main
@@ -102,8 +103,11 @@ def test_cli_status_subcommand(capsys: pytest.CaptureFixture[str]) -> None:
     assert "Host & Runtime:" in captured.out
 
 
-def test_cli_interactive_menu_exit(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+def test_cli_interactive_menu_exit(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
     import sys
+
     from barograph.ui import ui
 
     monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
@@ -119,6 +123,7 @@ def test_cli_interactive_menu_list(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     import sys
+
     from barograph.ui import ui
 
     (tmp_path / "plot_demo.py").write_text("fig = 1")
@@ -131,4 +136,3 @@ def test_cli_interactive_menu_list(
     captured = capsys.readouterr()
     assert "BAROGRAPH PLOT RUNNER & EXPORT ENGINE" in captured.out
     assert "plot_demo.py" in captured.out
-

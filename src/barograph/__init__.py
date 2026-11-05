@@ -3,7 +3,12 @@
 from __future__ import annotations
 
 from barograph.discovery import discover_plot_scripts, discover_scripts, resolve_target
-from barograph.exporter import ExportError, ExportResult, export_figure, render_to_html_string
+from barograph.exporter import (
+    ExportError,
+    ExportResult,
+    export_figure,
+    render_to_html_string,
+)
 from barograph.runner import (
     ExecutionResult,
     FigureNotFoundError,

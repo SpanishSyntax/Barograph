@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import sys
 from pathlib import Path
 
@@ -12,12 +11,16 @@ from barograph.runner import run_script
 from barograph.venv import activate_workspace_venv, find_workspace_venv
 
 
-def test_find_workspace_venv_none(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_find_workspace_venv_none(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.delenv("VIRTUAL_ENV", raising=False)
     assert find_workspace_venv(tmp_path) is None
 
 
-def test_find_workspace_venv_from_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_find_workspace_venv_from_dir(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.delenv("VIRTUAL_ENV", raising=False)
 
     host_ver = f"{sys.version_info.major}.{sys.version_info.minor}"
@@ -33,7 +36,9 @@ def test_find_workspace_venv_from_dir(tmp_path: Path, monkeypatch: pytest.Monkey
     assert info.detected_python_version == host_ver
 
 
-def test_find_workspace_venv_env_var(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_find_workspace_venv_env_var(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     host_ver = f"{sys.version_info.major}.{sys.version_info.minor}"
     venv_dir = tmp_path / "custom_env"
     sp = venv_dir / "lib" / f"python{host_ver}" / "site-packages"
@@ -48,7 +53,9 @@ def test_find_workspace_venv_env_var(tmp_path: Path, monkeypatch: pytest.MonkeyP
     assert info.is_compatible is True
 
 
-def test_find_workspace_venv_mismatched_version(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_find_workspace_venv_mismatched_version(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.delenv("VIRTUAL_ENV", raising=False)
 
     venv_dir = tmp_path / ".venv"
@@ -63,7 +70,9 @@ def test_find_workspace_venv_mismatched_version(tmp_path: Path, monkeypatch: pyt
     assert info.detected_python_version == "2.7"
 
 
-def test_activate_workspace_venv(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_activate_workspace_venv(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.delenv("VIRTUAL_ENV", raising=False)
 
     host_ver = f"{sys.version_info.major}.{sys.version_info.minor}"
@@ -83,8 +92,7 @@ def test_activate_workspace_venv(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     # Script importing the mock package
     script = tmp_path / "plot_venv_test.py"
     script.write_text(
-        "import my_mock_module\n"
-        "fig = f'magic_{my_mock_module.MAGIC_NUMBER}'\n"
+        "import my_mock_module\nfig = f'magic_{my_mock_module.MAGIC_NUMBER}'\n"
     )
 
     res = run_script(script)

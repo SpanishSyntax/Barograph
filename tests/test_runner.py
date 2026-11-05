@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
+
 import pytest
 
 from barograph.runner import (
@@ -251,8 +252,10 @@ def test_ensure_plotly_uirevision(tmp_path: Path) -> None:
     class MockFig:
         def __init__(self):
             self.layout = MockLayout()
+
         def write_html(self, path, **kwargs):
             pass
+
         def to_plotly_json(self):
             return {}
 

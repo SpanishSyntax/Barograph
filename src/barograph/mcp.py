@@ -94,7 +94,9 @@ def execute_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
                 return {"status": "error", "error": f"Path not found: {target}"}
 
             pattern = arguments.get("pattern", "plot*.py")
-            recursive = bool(arguments.get("recursive", True) or arguments.get("all_depths", False))
+            recursive = bool(
+                arguments.get("recursive", True) or arguments.get("all_depths", False)
+            )
             target_format = str(arguments.get("format", "html")).lower().lstrip(".")
 
             base_dir = target if target.is_dir() else target.parent
@@ -145,33 +147,41 @@ def execute_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
                         title=res.metadata.get("title"),
                     )
                     success_count += 1
-                    artifacts.append({
-                        "script": str(script),
-                        "output_file": str(exp.output_path),
-                        "format": exp.actual_format,
-                        "backend": exp.backend,
-                        "degraded": exp.degraded,
-                        "degraded_reason": exp.degraded_reason,
-                        "execution_time_ms": round(res.execution_time_ms, 2),
-                    })
+                    artifacts.append(
+                        {
+                            "script": str(script),
+                            "output_file": str(exp.output_path),
+                            "format": exp.actual_format,
+                            "backend": exp.backend,
+                            "degraded": exp.degraded,
+                            "degraded_reason": exp.degraded_reason,
+                            "execution_time_ms": round(res.execution_time_ms, 2),
+                        }
+                    )
                 except ScriptExecutionError as e:
                     failure_count += 1
-                    errors.append({
-                        "script": str(script),
-                        "error": str(e.original_exc),
-                    })
+                    errors.append(
+                        {
+                            "script": str(script),
+                            "error": str(e.original_exc),
+                        }
+                    )
                 except FigureNotFoundError as e:
                     failure_count += 1
-                    errors.append({
-                        "script": str(script),
-                        "error": str(e),
-                    })
+                    errors.append(
+                        {
+                            "script": str(script),
+                            "error": str(e),
+                        }
+                    )
                 except Exception as e:
                     failure_count += 1
-                    errors.append({
-                        "script": str(script),
-                        "error": str(e),
-                    })
+                    errors.append(
+                        {
+                            "script": str(script),
+                            "error": str(e),
+                        }
+                    )
 
             status = "ok" if failure_count == 0 else "error"
             return {
@@ -193,7 +203,9 @@ def execute_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
                 return {"status": "error", "error": f"Path not found: {target}"}
 
             pattern = arguments.get("pattern", "plot*.py")
-            recursive = bool(arguments.get("recursive", True) or arguments.get("all_depths", False))
+            recursive = bool(
+                arguments.get("recursive", True) or arguments.get("all_depths", False)
+            )
 
             scripts = discover_scripts(target, pattern=pattern, recursive=recursive)
             base_dir = target if target.is_dir() else target.parent
@@ -201,7 +213,9 @@ def execute_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
                 {
                     "file": str(s),
                     "name": s.name,
-                    "relative": str(s.relative_to(base_dir)) if s.parent != base_dir else s.name,
+                    "relative": str(s.relative_to(base_dir))
+                    if s.parent != base_dir
+                    else s.name,
                     "size_bytes": s.stat().st_size,
                 }
                 for s in scripts

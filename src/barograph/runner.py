@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import importlib.util
-import os
 import sys
 import time
 import uuid
@@ -11,7 +10,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from types import ModuleType
 from typing import Any
-
 
 from barograph.venv import activate_workspace_venv, find_workspace_venv
 
@@ -25,7 +23,9 @@ class FigureNotFoundError(Exception):
 class ScriptExecutionError(Exception):
     """Raised when an executed script raises an unhandled exception."""
 
-    def __init__(self, script_path: Path, original_exc: Exception, tb_text: str | None = None) -> None:
+    def __init__(
+        self, script_path: Path, original_exc: Exception, tb_text: str | None = None
+    ) -> None:
         self.script_path = script_path
         self.original_exc = original_exc
         self.tb_text = tb_text
@@ -56,9 +56,17 @@ def extract_title_from_figure(figure: Any) -> str | None:
         if title_obj is not None:
             if isinstance(title_obj, str) and title_obj.strip():
                 return title_obj.strip()
-            if hasattr(title_obj, "text") and isinstance(title_obj.text, str) and title_obj.text.strip():
+            if (
+                hasattr(title_obj, "text")
+                and isinstance(title_obj.text, str)
+                and title_obj.text.strip()
+            ):
                 return title_obj.text.strip()
-            if isinstance(title_obj, dict) and "text" in title_obj and title_obj["text"]:
+            if (
+                isinstance(title_obj, dict)
+                and "text" in title_obj
+                and title_obj["text"]
+            ):
                 return str(title_obj["text"]).strip()
 
     # 2. Matplotlib / Seaborn
@@ -80,7 +88,11 @@ def extract_title_from_figure(figure: Any) -> str | None:
         title_obj = getattr(figure, "title", None)
         if isinstance(title_obj, str) and title_obj.strip():
             return title_obj.strip()
-        if hasattr(title_obj, "text") and isinstance(title_obj.text, str) and title_obj.text.strip():
+        if (
+            hasattr(title_obj, "text")
+            and isinstance(title_obj.text, str)
+            and title_obj.text.strip()
+        ):
             return title_obj.text.strip()
 
     # 4. Altair
@@ -119,7 +131,9 @@ def extract_metadata(module: ModuleType, figure: Any, path: Path) -> dict[str, A
     }
 
 
-def ensure_plotly_uirevision(fig: Any, default_revision: str = "barograph-persist") -> None:
+def ensure_plotly_uirevision(
+    fig: Any, default_revision: str = "barograph-persist"
+) -> None:
     """Ensure Plotly figure preserves 3D camera angles and 2D zoom/pan across updates."""
     if fig is None:
         return
@@ -142,7 +156,9 @@ def detect_backend(fig: Any) -> str:
     type_name = type(fig).__name__
     mod_name = type(fig).__module__
 
-    if "plotly" in mod_name or (hasattr(fig, "write_html") and hasattr(fig, "to_plotly_json")):
+    if "plotly" in mod_name or (
+        hasattr(fig, "write_html") and hasattr(fig, "to_plotly_json")
+    ):
         return "plotly"
 
     if "matplotlib" in mod_name or (type_name == "Figure" and hasattr(fig, "savefig")):
@@ -151,7 +167,12 @@ def detect_backend(fig: Any) -> str:
     if "seaborn" in mod_name or "FacetGrid" in type_name or "PairGrid" in type_name:
         return "seaborn"
 
-    if "altair" in mod_name or type_name in {"Chart", "LayerChart", "VConcatChart", "HConcatChart"}:
+    if "altair" in mod_name or type_name in {
+        "Chart",
+        "LayerChart",
+        "VConcatChart",
+        "HConcatChart",
+    }:
         return "altair"
 
     if "bokeh" in mod_name or hasattr(fig, "renderers"):
@@ -176,7 +197,11 @@ def unwrap_figure(obj: Any) -> Any:
         return None
 
     # Handle PlotConfigurator instance (from flaker Barograph template)
-    if hasattr(obj, "fig") and not hasattr(obj, "savefig") and hasattr(obj.fig, "write_html"):
+    if (
+        hasattr(obj, "fig")
+        and not hasattr(obj, "savefig")
+        and hasattr(obj.fig, "write_html")
+    ):
         return obj.fig
 
     # Handle Seaborn FacetGrid, PairGrid, JointGrid
@@ -267,7 +292,9 @@ def extract_figure_from_module(module: ModuleType) -> Any:
         if name.startswith("_"):
             continue
         unwrapped = unwrap_figure(val)
-        if unwrapped is not None and (hasattr(unwrapped, "write_html") or hasattr(unwrapped, "savefig")):
+        if unwrapped is not None and (
+            hasattr(unwrapped, "write_html") or hasattr(unwrapped, "savefig")
+        ):
             return unwrapped
 
     return None
@@ -310,6 +337,7 @@ def run_script(
     # Coerce headless matplotlib backend to prevent GUI blocking
     try:
         import matplotlib
+
         matplotlib.use("Agg")
     except Exception:
         pass
@@ -318,6 +346,7 @@ def run_script(
     if "matplotlib.pyplot" in sys.modules:
         try:
             import matplotlib.pyplot as plt
+
             original_plt_show = plt.show
             plt.show = lambda *args, **kwargs: None
             if clear_matplotlib_stack:
@@ -359,6 +388,7 @@ def run_script(
         if original_plt_show is not None:
             try:
                 import matplotlib.pyplot as plt
+
                 plt.show = original_plt_show
             except Exception:
                 pass

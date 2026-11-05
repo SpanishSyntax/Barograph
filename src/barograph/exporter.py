@@ -7,7 +7,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from barograph.runner import detect_backend, ensure_plotly_uirevision, extract_title_from_figure
+from barograph.runner import (
+    detect_backend,
+    ensure_plotly_uirevision,
+    extract_title_from_figure,
+)
 
 
 class ExportError(Exception):
@@ -107,7 +111,9 @@ def render_to_html_string(figure: Any, title: str | None = None) -> str:
     import tempfile
 
     backend = detect_backend(figure)
-    resolved_title = title or extract_title_from_figure(figure) or "Barograph Figure Preview"
+    resolved_title = (
+        title or extract_title_from_figure(figure) or "Barograph Figure Preview"
+    )
 
     if backend == "plotly":
         ensure_plotly_uirevision(figure)
@@ -181,7 +187,11 @@ def render_to_html_string(figure: Any, title: str | None = None) -> str:
 
     if isinstance(figure, str):
         stripped = figure.strip()
-        if stripped.startswith("<!DOCTYPE") or "<html" in stripped or "<div" in stripped:
+        if (
+            stripped.startswith("<!DOCTYPE")
+            or "<html" in stripped
+            or "<div" in stripped
+        ):
             return figure
         return wrap_svg_in_html(figure, title=resolved_title)
 
@@ -307,6 +317,7 @@ def export_figure(
                 try:
                     from bokeh.embed import file_html
                     from bokeh.resources import CDN
+
                     html_str = file_html(figure, CDN, resolved_title)
                     out_file.write_text(html_str, encoding="utf-8")
                 except Exception as e:
@@ -314,12 +325,15 @@ def export_figure(
         else:
             try:
                 from bokeh.io import export_png, export_svg
+
                 if fmt in {"png", "webp"}:
                     export_png(figure, filename=str(out_file))
                 elif fmt == "svg":
                     export_svg(figure, filename=str(out_file))
                 else:
-                    raise ExportError(f"Bokeh does not support '{fmt}' export directly.")
+                    raise ExportError(
+                        f"Bokeh does not support '{fmt}' export directly."
+                    )
             except Exception as e:
                 raise ExportError(f"Bokeh static export failed: {e}") from e
 
@@ -331,20 +345,31 @@ def export_figure(
                 if stripped.startswith("<!DOCTYPE") or "<html" in stripped:
                     out_file.write_text(figure, encoding="utf-8")
                 elif "<svg" in stripped:
-                    out_file.write_text(wrap_svg_in_html(figure, title=resolved_title), encoding="utf-8")
+                    out_file.write_text(
+                        wrap_svg_in_html(figure, title=resolved_title), encoding="utf-8"
+                    )
                 else:
-                    out_file.write_text(wrap_svg_in_html(f"<pre>{figure}</pre>", title=resolved_title), encoding="utf-8")
+                    out_file.write_text(
+                        wrap_svg_in_html(f"<pre>{figure}</pre>", title=resolved_title),
+                        encoding="utf-8",
+                    )
             elif fmt == "svg" and "<svg" in stripped:
                 out_file.write_text(figure, encoding="utf-8")
             else:
                 out_file.write_text(figure, encoding="utf-8")
-        elif hasattr(figure, "_repr_html_") and callable(figure._repr_html_) and fmt == "html":
+        elif (
+            hasattr(figure, "_repr_html_")
+            and callable(figure._repr_html_)
+            and fmt == "html"
+        ):
             rep = figure._repr_html_()
             if isinstance(rep, str):
                 if rep.strip().startswith("<!DOCTYPE") or "<html" in rep:
                     out_file.write_text(rep, encoding="utf-8")
                 else:
-                    out_file.write_text(wrap_svg_in_html(rep, title=resolved_title), encoding="utf-8")
+                    out_file.write_text(
+                        wrap_svg_in_html(rep, title=resolved_title), encoding="utf-8"
+                    )
             else:
                 out_file.write_text(str(rep), encoding="utf-8")
         elif hasattr(figure, "export") and callable(figure.export):

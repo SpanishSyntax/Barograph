@@ -12,19 +12,15 @@ from pathlib import Path
 from typing import Sequence
 
 from barograph import __version__
-from barograph.discovery import discover_scripts, resolve_target
+from barograph.discovery import discover_scripts
 from barograph.exporter import export_figure
 from barograph.runner import FigureNotFoundError, ScriptExecutionError, run_script
 from barograph.ui import (
     add_color_args,
-    apply_color_args,
     handle_color_args,
-    handle_version_arg,
-    render_error_panel,
-    render_panel,
     ui,
 )
-from barograph.venv import activate_workspace_venv, find_workspace_venv
+from barograph.venv import activate_workspace_venv
 
 
 def get_git_status(path: Path) -> str:
@@ -170,9 +166,7 @@ def run_interactive_menu(scripts: list[Path]) -> int:
             "List discovered plot scripts, file sizes, and paths",
         )
     )
-    actions.append(
-        ("exit", "Exit", "Close Barograph dashboard")
-    )
+    actions.append(("exit", "Exit", "Close Barograph dashboard"))
 
     try:
         action = ui.select("Quick Actions:", actions)
@@ -197,15 +191,18 @@ def run_interactive_menu(scripts: list[Path]) -> int:
 
     if action == "build-single":
         options = [
-            (str(s), s.name, f"{s.stat().st_size / 1024.0:.1f} KB")
-            for s in scripts
+            (str(s), s.name, f"{s.stat().st_size / 1024.0:.1f} KB") for s in scripts
         ]
         chosen = ui.select("Select plot script to export:", options)
         if not chosen:
             return 0
         chosen_path = Path(chosen)
         fmt_options = [
-            ("html", "Interactive HTML", "Standalone bundle (Plotly/generic) or SVG fallback"),
+            (
+                "html",
+                "Interactive HTML",
+                "Standalone bundle (Plotly/generic) or SVG fallback",
+            ),
             ("svg", "Vector SVG", "Clean scalable vector graphic for papers / slides"),
             ("png", "Raster PNG", "High-resolution raster graphic"),
             ("pdf", "Vector PDF", "Portable Document Format for print / Typst"),
@@ -337,7 +334,11 @@ def cmd_build(args: argparse.Namespace) -> int:
     start_total = time.perf_counter()
 
     for script in scripts:
-        rel_name = script.name if script.parent == source_dir else str(script.relative_to(source_dir))
+        rel_name = (
+            script.name
+            if script.parent == source_dir
+            else str(script.relative_to(source_dir))
+        )
         try:
             # 1. Execute script and extract figure
             res = run_script(script)
@@ -387,6 +388,7 @@ def cmd_build(args: argparse.Namespace) -> int:
             ui.error(f"Error processing {ui.bold(rel_name)}: {e}")
             if verbose:
                 import traceback
+
                 traceback.print_exc()
 
     total_sec = time.perf_counter() - start_total
@@ -433,7 +435,9 @@ def cmd_list(args: argparse.Namespace) -> int:
             {
                 "file": str(s),
                 "name": s.name,
-                "relative": str(s.relative_to(source_dir)) if s.parent != source_dir else s.name,
+                "relative": str(s.relative_to(source_dir))
+                if s.parent != source_dir
+                else s.name,
                 "size_bytes": s.stat().st_size,
             }
             for s in scripts
@@ -471,7 +475,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         pass
 
     # Intercept top-level help and version before parser
-    if "-h" in raw_argv or "--help" in raw_argv or (len(raw_argv) == 1 and raw_argv[0] == "help"):
+    if (
+        "-h" in raw_argv
+        or "--help" in raw_argv
+        or (len(raw_argv) == 1 and raw_argv[0] == "help")
+    ):
         print_help()
         return 0
 
@@ -492,29 +500,46 @@ def main(argv: Sequence[str] | None = None) -> int:
         add_help=False,
     )
     add_color_args(parser)
-    parser.add_argument("-v", "--verbose", action="store_true", help="Verbose error output")
+    parser.add_argument(
+        "-v", "--verbose", action="store_true", help="Verbose error output"
+    )
     parser.add_argument("-V", "--version", action="store_true", help="Show version")
     parser.add_argument("-h", "--help", action="store_true", help="Show help")
 
     subparsers = parser.add_subparsers(dest="command", required=False)
 
     # Subcommand: status
-    p_status = subparsers.add_parser("status", add_help=False, help="Display status dashboard")
+    p_status = subparsers.add_parser(
+        "status", add_help=False, help="Display status dashboard"
+    )
     add_color_args(p_status)
-    p_status.add_argument("-d", "--dir", default=".", help="Source directory (default: .)")
+    p_status.add_argument(
+        "-d", "--dir", default=".", help="Source directory (default: .)"
+    )
     p_status.add_argument("-h", "--help", action="store_true", help="Show help")
 
     # Subcommand: menu / dashboard
-    p_menu = subparsers.add_parser("menu", aliases=["dashboard"], add_help=False, help="Open interactive Quick Actions menu")
+    p_menu = subparsers.add_parser(
+        "menu",
+        aliases=["dashboard"],
+        add_help=False,
+        help="Open interactive Quick Actions menu",
+    )
     add_color_args(p_menu)
-    p_menu.add_argument("-d", "--dir", default=".", help="Source directory (default: .)")
+    p_menu.add_argument(
+        "-d", "--dir", default=".", help="Source directory (default: .)"
+    )
     p_menu.add_argument("-h", "--help", action="store_true", help="Show help")
 
     # Subcommand: build
     p_build = subparsers.add_parser("build", add_help=False)
     add_color_args(p_build)
-    p_build.add_argument("-d", "--dir", default=".", help="Source directory (default: .)")
-    p_build.add_argument("-o", "--out", default="./dist", help="Output directory (default: ./dist)")
+    p_build.add_argument(
+        "-d", "--dir", default=".", help="Source directory (default: .)"
+    )
+    p_build.add_argument(
+        "-o", "--out", default="./dist", help="Output directory (default: ./dist)"
+    )
     p_build.add_argument(
         "-f",
         "--format",
@@ -522,23 +547,37 @@ def main(argv: Sequence[str] | None = None) -> int:
         choices=["html", "svg", "png", "pdf", "webp", "jpg", "jpeg"],
         help="Target export format (default: html)",
     )
-    p_build.add_argument("-p", "--pattern", default="plot*.py", help="Glob pattern (default: plot*.py)")
-    p_build.add_argument("-r", "--recursive", action="store_true", help="Scan recursively")
+    p_build.add_argument(
+        "-p", "--pattern", default="plot*.py", help="Glob pattern (default: plot*.py)"
+    )
+    p_build.add_argument(
+        "-r", "--recursive", action="store_true", help="Scan recursively"
+    )
     p_build.add_argument("-a", "--all", action="store_true", help="Scan recursively")
-    p_build.add_argument("-v", "--verbose", action="store_true", help="Verbose error output")
+    p_build.add_argument(
+        "-v", "--verbose", action="store_true", help="Verbose error output"
+    )
     p_build.add_argument("-h", "--help", action="store_true", help="Show help")
 
     # Subcommand: list / ls
     p_list = subparsers.add_parser("list", aliases=["ls"], add_help=False)
     add_color_args(p_list)
-    p_list.add_argument("-d", "--dir", default=".", help="Source directory (default: .)")
-    p_list.add_argument("-p", "--pattern", default="plot*.py", help="Glob pattern (default: plot*.py)")
-    p_list.add_argument("-r", "--recursive", action="store_true", help="Scan recursively")
+    p_list.add_argument(
+        "-d", "--dir", default=".", help="Source directory (default: .)"
+    )
+    p_list.add_argument(
+        "-p", "--pattern", default="plot*.py", help="Glob pattern (default: plot*.py)"
+    )
+    p_list.add_argument(
+        "-r", "--recursive", action="store_true", help="Scan recursively"
+    )
     p_list.add_argument("-a", "--all", action="store_true", help="Scan recursively")
     p_list.add_argument("-h", "--help", action="store_true", help="Show help")
 
     # Subcommand: mcp
-    p_mcp = subparsers.add_parser("mcp", add_help=False, help="Run Model Context Protocol (MCP) stdio bridge")
+    p_mcp = subparsers.add_parser(
+        "mcp", add_help=False, help="Run Model Context Protocol (MCP) stdio bridge"
+    )
     add_color_args(p_mcp)
     p_mcp.add_argument("-h", "--help", action="store_true", help="Show help")
 
@@ -566,6 +605,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         return run_interactive_menu(scripts)
     elif args.command == "mcp":
         from barograph import mcp
+
         return mcp.main()
     else:
         scripts = print_status_dashboard()

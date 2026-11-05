@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import importlib
 import os
-from dataclasses import dataclass
-from pathlib import Path
 import site
 import sys
+from dataclasses import dataclass
+from pathlib import Path
 
 
 @dataclass
@@ -107,7 +107,7 @@ def find_workspace_venv(start_path: str | Path = ".") -> VenvInfo | None:
                         if sp.is_dir():
                             target_sp = sp
                             detected_ver = sub.name.replace("python", "")
-                            is_compatible = (detected_ver == host_ver)
+                            is_compatible = detected_ver == host_ver
                             break
 
         # Windows layout fallback

@@ -6,10 +6,11 @@ import io
 import json
 import sys
 from pathlib import Path
+
 import pytest
 
 from barograph.cli import main
-from barograph.mcp import StdioMCPServer, TOOL_DEFINITIONS, execute_tool
+from barograph.mcp import StdioMCPServer, execute_tool
 
 
 def test_mcp_initialize() -> None:
@@ -154,7 +155,9 @@ def test_mcp_build_failure(tmp_path: Path) -> None:
 
 
 def test_mcp_build_empty(tmp_path: Path) -> None:
-    res = execute_tool("barograph_build", {"path": str(tmp_path), "pattern": "plot*.py"})
+    res = execute_tool(
+        "barograph_build", {"path": str(tmp_path), "pattern": "plot*.py"}
+    )
     assert res["status"] == "ok"
     assert res["total"] == 0
     assert res["artifacts"] == []
@@ -189,7 +192,9 @@ def test_mcp_tools_call_rpc(tmp_path: Path) -> None:
     assert data["scripts"][0]["name"] == "plot_demo.py"
 
 
-def test_mcp_stdio_server_run(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+def test_mcp_stdio_server_run(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
     req = {
         "jsonrpc": "2.0",
         "id": 7,
