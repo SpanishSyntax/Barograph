@@ -247,6 +247,7 @@ Commands:
   status                 Display host, runtime, backends & script dashboard
   build [options]        Batch execute and export standalone plotting scripts
   list [options]         Discover and inspect local plotting scripts (alias: ls)
+  mcp                    Run Model Context Protocol (MCP) stdio bridge
 
 Options:
   -A, --agent            Compact machine/agent friendly output mode
@@ -272,12 +273,14 @@ Options:
   barograph menu                         Open interactive Quick Actions menu
   barograph build [options]              Batch execute and export standalone plotting scripts
   barograph list [options]               Discover and inspect local plotting scripts
+  barograph mcp                          Run Model Context Protocol (MCP) stdio bridge
   barograph <command> [options]
 
 {ui.blue("Interactive & Inspection Commands:")}
   status                 Display live host, runtime, plot backends & script dashboard
   menu                   Open the interactive Quick Actions menu (alias: dashboard)
   list                   Discover and inspect local plotting scripts (alias: ls)
+  mcp                    Run Model Context Protocol (MCP) stdio bridge
 
 {ui.blue("Build Options:")}
   -d, --dir DIR          Source directory containing plot scripts (default: current directory)
@@ -534,6 +537,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     p_list.add_argument("-a", "--all", action="store_true", help="Scan recursively")
     p_list.add_argument("-h", "--help", action="store_true", help="Show help")
 
+    # Subcommand: mcp
+    p_mcp = subparsers.add_parser("mcp", add_help=False, help="Run Model Context Protocol (MCP) stdio bridge")
+    add_color_args(p_mcp)
+    p_mcp.add_argument("-h", "--help", action="store_true", help="Show help")
+
     try:
         args = parser.parse_args(argv)
     except Exception as e:
@@ -556,6 +564,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     elif args.command in {"menu", "dashboard"}:
         scripts = print_status_dashboard(getattr(args, "dir", "."))
         return run_interactive_menu(scripts)
+    elif args.command == "mcp":
+        from barograph import mcp
+        return mcp.main()
     else:
         scripts = print_status_dashboard()
         if sys.stdin.isatty():
