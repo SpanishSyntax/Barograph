@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="assets/banner.png" alt="Antique precision barograph instrument with rotating recording chart drum and pen linkage" width="100%" />
-</p>
+<img src="assets/banner.png" alt="Antique precision barograph instrument with rotating recording chart drum and pen linkage" width="100%" />
 
 # Barograph 📈
 
